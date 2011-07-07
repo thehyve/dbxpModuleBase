@@ -81,6 +81,11 @@ class Study {
 	public String token() { return studyToken; }
 	public String toString() { return "Study " + id + ": " + ( name ?: "" ) }
 
+	public def beforeDelete = {
+		def auth = [] + Auth.findAllByStudy( this );
+		auth.each { it.delete( flush: true ) }
+	}
+	
 	/**
 	 * Convenience method to check whether this object should be synchronized with GSCF
 	 * @return	true if the study version in GSCF is different from this object

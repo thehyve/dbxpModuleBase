@@ -46,9 +46,7 @@ class AuthenticationService {
 						return [ "status": false, "redirect": gscfService.urlAuthRemote(params, session.sessionToken) ]
 					} else {
 						log.debug "POST request: redirect can't be handled properly"
-						flash.message = "Unfortunately, your request could not be completed, because the system had to log you in first. Please try again."
-
-						return [ "status": false, "redirect": gscfService.urlAuthRemote(null, session.sessionToken) ]
+						return [ "status": false, "redirect": gscfService.urlAuthRemote(null, session.sessionToken), "message": "Unfortunately, your request could not be completed, because the system had to log you in first. Please try again." ]
 					}
 				}
 				
@@ -75,8 +73,7 @@ class AuthenticationService {
 				return [ "status": false, "redirect": gscfService.urlAuthRemote(params, session.sessionToken) ]
 			} else {
 				log.debug "POST request: redirect can't be handled properly"
-				flash.message = "Unfortunately, your request could not be completed, because the system had to log you in first. Please try again."
-				return [ "status": false, "redirect": gscfService.urlAuthRemote(null, session.sessionToken) ]
+				return [ "status": false, "redirect": gscfService.urlAuthRemote(null, session.sessionToken), "message": "Unfortunately, your request could not be completed, because the system had to log you in first. Please try again." ]
 			}
 		}
 		

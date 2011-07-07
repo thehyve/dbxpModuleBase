@@ -3,7 +3,7 @@
 
 	Use a 'paginate' class on a table to create a paginated table using datatables plugin.
 
-		<table class="paginate">
+		<table class="datatables">
 			<thead>
 				<tr><th>Name</th><th># samples</th></tr>
 			</thead>
@@ -19,14 +19,16 @@
 	You can use extra classes to determine datatables behaviour:
 		class 'filter' can be added to the table to enable filtering
 		class 'length_change' can be added to the table to enable length changing
-		class 'sortable' can be used instead of paginate to enable sorting but not pagination
+		class 'sortable' can be added to the table to enable sorting
+		class 'paginate' can be added to the table to enable pagination
+		class 'hideInfo' can be added to hide the information about the number of items
 		
 	Serverside tables:
 	
 	When you have a table with lots of rows, creating the HTML table can take a while. You can also 
 	create a table where the data for each page will be fetched from the server. This can be done using
 	  
-		<table class="paginate serverside" rel="/url/to/ajaxData">
+		<table class="datatables serverside" rel="/url/to/ajaxData">
 			<thead>
 				<tr><th>Name</th><th># samples</th></tr>
 			</thead>
@@ -47,7 +49,7 @@ function initializePagination( selector ) {
 	}
 	
 	// Initialize default pagination
-	$( selector + ' table.paginate:not(.serverside)').each(function(idx, el) {
+	$( selector + ' table.datatables:not(.serverside)').each(function(idx, el) {
 		var $el = $(el);
 		
 		tableType[ $el.attr( 'id' ) ] = "clientside";
@@ -57,6 +59,9 @@ function initializePagination( selector ) {
 			bAutoWidth: false,
 			bFilter: $el.hasClass( 'filter' ), 
 			bLengthChange: $el.hasClass( 'length_change' ), 
+			bPaginate: $el.hasClass( 'paginate' ),
+			bSort: $el.hasClass( 'sortable' ),
+			bInfo: !$el.hasClass( 'hideInfo' ),
 			iCookieDuration: 86400,				// Save cookie one day
 			sPaginationType: 'full_numbers',
 			iDisplayLength: 10,					// Number of items shown on one page.
@@ -68,7 +73,7 @@ function initializePagination( selector ) {
 	});
 
 	// Initialize serverside pagination
-	$( selector + ' table.paginate.serverside').each(function(idx, el) {
+	$( selector + ' table.datatables.serverside').each(function(idx, el) {
 		var $el = $(el);
 		
 		// Determine data url from rel attribute
@@ -88,6 +93,9 @@ function initializePagination( selector ) {
 			bAutoWidth: false,
 			bFilter: $el.hasClass( 'filter' ), 
 			bLengthChange: $el.hasClass( 'length_change' ), 
+			bPaginate: $el.hasClass( 'paginate' ),
+			bSort: $el.hasClass( 'sortable' ),
+			bInfo: !$el.hasClass( 'hideInfo' ),
 			iCookieDuration: 86400,				// Save cookie one day
 			sPaginationType: 'full_numbers',
 			iDisplayLength: 10,					// Number of items shown on one page.
@@ -120,27 +128,6 @@ function initializePagination( selector ) {
 		});
 	});
 	
-	// Initialize tables that should be sortable, but not paginated
-	$( selector + ' table.sortable:not(.paginate)').each(function(idx, el) {
-		var $el = $(el);
-		
-		$el.dataTable({ 
-			bJQueryUI: true, 
-			bAutoWidth: false,
-			bFilter: $el.hasClass( 'filter' ), 
-			bLengthChange: $el.hasClass( 'length_change' ), 
-			bPaginate: false,
-			iCookieDuration: 86400,				// Save cookie one day
-			sScrollY: '350px',
-			sScrollX: $el.hasClass( 'scrollX' ) ? '100%' : '',
-			bScrollCollapse: true,
-			aoColumnDefs: [
-				{ "bSortable": false, "aTargets": ["nonsortable"] },			// Disable sorting on all columns with th.nonsortable
-				{ "sType": "formatted-num", "aTargets": ["formatted_num"] }		// Make sorting possible on formatted numbers
-			]						
-		});
-	});	
-	
 	// Show hide paginated buttons
 	showHidePaginatedButtons( selector );
 }
@@ -154,38 +141,31 @@ function showHidePaginatedButtons( selector ) {
 }
 
 function showHidePaginatedButtonsForTableWrapper( el ) {
-	// Hide pagination if only one page is present (that is: if no buttons can be clicked)
-	if(el.find('span span.ui-state-default:not(.ui-state-disabled)').size() == 0 ){
-		el.find('div.fg-toolbar').hide();
-		
-		// If length_change or filter is turned on, show the top bar
-		if( el.find( 'table' ).hasClass( 'filter' ) || el.find( 'table' ).hasClass( 'length_change' ) ) 
-			el.find( 'div.ui-toolbar' ).first().show();
+	// Hide the top bar for the table if neither filter and length_change are enabled
+	if( tableWrapperHasClass( el, 'filter' ) || tableWrapperHasClass( el, 'length_change' ) ) 
+		el.find( 'div.ui-toolbar' ).first().show();
+	else 
+		el.find( 'div.ui-toolbar' ).first().hide();
+
+	// Hide footer if info is turned off and pagination has 1 page or is not present
+	if( tableWrapperHasClass( el, 'hideInfo' ) && ( 
+			!tableWrapperHasClass( el, 'paginate' ) || 
+			el.find('span span.ui-state-default:not(.ui-state-disabled)').size() == 0		
+	    ) 
+	) {
+		el.find( 'div.ui-toolbar' ).last().hide();
 	} else {
-		el.find('div.fg-toolbar').show();
-		
-		// If length_change or filter is turned off, hide the top bar
-		if( !el.find( 'table' ).hasClass( 'filter' ) && !el.find( 'table' ).hasClass( 'length_change' ) ) 
-			el.find( 'div.ui-toolbar' ).first().hide();
-
-		// Check whether a h1, h2 or h3 is present above the table, and move it into the table
-		/*
-		var $previousElement = $el.prev();
-		if( $previousElement != undefined && $previousElement.get(0) != undefined ) {
-			var tagName = $previousElement.get(0).tagName.toLowerCase();
-			if( tagName == "h1" || tagName == "h2" || tagName == "h3" ) {
-				// Put the margin that was on the title onto the table
-				$el.css( "margin-top", $previousElement.css( "margin-top" ) );
-				$previousElement.css( "margin-top", '4px' );
-				$previousElement.css( "marginBottom", '4px' );
-
-				// If so, move the element into the table
-				$previousElement.remove();
-				$el.find( 'div.ui-toolbar' ).first().append( $previousElement );
-			}
-		}
-		*/						
+		el.find( 'div.ui-toolbar' ).last().show();
 	}	
+}
+
+/**
+ * Returns true if the datatables table within the tableWrapper has a specific class
+ * @param tableWrapper
+ * @param className
+ */
+function tableWrapperHasClass( tableWrapper, className ) {
+	return $(tableWrapper).find( 'table' ).hasClass( className );
 }
 
 /**
