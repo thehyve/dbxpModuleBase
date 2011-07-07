@@ -16,7 +16,11 @@
 	will automatically create a paginated table, without any further actions. The pagination
 	buttons will only appear if there is more than 1 page.
 
-	
+	You can use extra classes to determine datatables behaviour:
+		class 'filter' can be added to the table to enable filtering
+		class 'length_change' can be added to the table to enable length changing
+		class 'sortable' can be used instead of paginate to enable sorting but not pagination
+		
 	Serverside tables:
 	
 	When you have a table with lots of rows, creating the HTML table can take a while. You can also 
@@ -51,8 +55,8 @@ function initializePagination( selector ) {
 		$el.dataTable({ 
 			bJQueryUI: true, 
 			bAutoWidth: false,
-			bFilter: false, 
-			bLengthChange: false, 
+			bFilter: $el.hasClass( 'filter' ), 
+			bLengthChange: $el.hasClass( 'length_change' ), 
 			iCookieDuration: 86400,				// Save cookie one day
 			sPaginationType: 'full_numbers',
 			iDisplayLength: 10,					// Number of items shown on one page.
@@ -82,8 +86,8 @@ function initializePagination( selector ) {
 
 			bJQueryUI: true, 
 			bAutoWidth: false,
-			bFilter: false, 
-			bLengthChange: false, 
+			bFilter: $el.hasClass( 'filter' ), 
+			bLengthChange: $el.hasClass( 'length_change' ), 
 			iCookieDuration: 86400,				// Save cookie one day
 			sPaginationType: 'full_numbers',
 			iDisplayLength: 10,					// Number of items shown on one page.
@@ -117,14 +121,14 @@ function initializePagination( selector ) {
 	});
 	
 	// Initialize tables that should be sortable, but not paginated
-	$( selector + ' table.sortable').each(function(idx, el) {
+	$( selector + ' table.sortable:not(.paginate)').each(function(idx, el) {
 		var $el = $(el);
 		
 		$el.dataTable({ 
 			bJQueryUI: true, 
 			bAutoWidth: false,
-			bFilter: false, 
-			bLengthChange: false, 
+			bFilter: $el.hasClass( 'filter' ), 
+			bLengthChange: $el.hasClass( 'length_change' ), 
 			bPaginate: false,
 			iCookieDuration: 86400,				// Save cookie one day
 			sScrollY: '350px',
@@ -152,11 +156,18 @@ function showHidePaginatedButtons( selector ) {
 function showHidePaginatedButtonsForTableWrapper( el ) {
 	// Hide pagination if only one page is present (that is: if no buttons can be clicked)
 	if(el.find('span span.ui-state-default:not(.ui-state-disabled)').size() == 0 ){
-		el.find('div.fg-toolbar').css( 'display', 'none' );
-	} else {
-		el.find('div.fg-toolbar').css( 'display', 'block' );
-		el.find( 'div.ui-toolbar' ).first().hide();
+		el.find('div.fg-toolbar').hide();
 		
+		// If length_change or filter is turned on, show the top bar
+		if( el.find( 'table' ).hasClass( 'filter' ) || el.find( 'table' ).hasClass( 'length_change' ) ) 
+			el.find( 'div.ui-toolbar' ).first().show();
+	} else {
+		el.find('div.fg-toolbar').show();
+		
+		// If length_change or filter is turned off, hide the top bar
+		if( !el.find( 'table' ).hasClass( 'filter' ) && !el.find( 'table' ).hasClass( 'length_change' ) ) 
+			el.find( 'div.ui-toolbar' ).first().hide();
+
 		// Check whether a h1, h2 or h3 is present above the table, and move it into the table
 		/*
 		var $previousElement = $el.prev();

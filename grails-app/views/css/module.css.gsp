@@ -304,78 +304,87 @@ th.desc a {
 	font-size: 10px;
 }
 
-/* Hides the default navigation bar that is added by the Grails scaffolding */
-/* .nav { display: none; } */
+.buttons a, .buttons input {
+	font-size: 10px;
+	font-weight: bold;
+	margin-right: 15px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	line-height: 20px;
+	padding-left: 26px;	
+
+	background-image: transparent;
+	background-repeat: no-repeat;
+	background-position: 3px 50%;
+
+	color: #333;
+}
+
 
 /* Links in the buttons section should look just like buttons in the
    same section */
-#content .button a {
-	color: #333;
-}
-
-.button a {
-	font-size: 10px;
-	font-weight: bold;
-	margin-left: 3px;
-	margin-right: 3px;
-	padding-top: 2px;
-	padding-bottom: 2px;
-}
-
 .buttons input {
-	background: #fff;
-	border: 0;
-	color: #333;
+	background-color: #fff;
+	border-width: 0;
 	cursor: pointer;
-	font-size: 10px;
-	font-weight: bold;
-	margin-left: 3px;
-	margin-right: 3px;
 	overflow: visible;
-	padding: 2px 6px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-}
-
-.buttons input.delete, .buttons a.delete {
-	background: transparent url(${fam.icon( name: 'delete' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-}
-
-.buttons input.edit, .buttons a.edit {
-	background: transparent url(${fam.icon( name: 'application_edit' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-}
-
-.buttons input.save, .buttons a.save {
-	background: transparent url(${fam.icon( name: 'accept' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-}
-
-.buttons input.create, .buttons a.create {
-	background: transparent url(${fam.icon( name: 'add' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-}
-
-.buttons input.backToList, .buttons a.backToList {
-	background: transparent url(${fam.icon( name: 'application' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-}
-
-.buttons input.cancel, .buttons a.cancel {
-	background: transparent url(${fam.icon( name: 'delete' )}) 5px 50% no-repeat;
-	padding-left: 28px;
-	font-weight: normal;
-}
-
-.buttons input.otherList, .buttons a.otherList {
-	background: transparent url(${fam.icon( name: 'application_view_detail' )}) 5px 50% no-repeat;
-	padding-left: 28px;
 }
 
 /* Reset the font weight for buttons occurring within the table */
 td.buttons input {
 	font-weight: normal;
 }
+
+
+
+.buttons .separator { margin-left: 20px; }
+
+.buttons a.disabled { color: #aaa; cursor: default; }
+
+.buttons .add, .buttons .create {
+	background-image: url(${fam.icon( name: 'add')});
+}
+.buttons .edit {
+	background-image:  url(${fam.icon( name: 'pencil')});
+}
+.buttons .delete, .buttons .remove {
+	background-image: url(${fam.icon( name: 'delete')});
+}
+
+.buttons .back {
+	background-image: url(${fam.icon( name: 'arrow_left' )});
+}
+.buttons .save {
+	background-image:  url(${fam.icon( name: 'accept' )});
+}
+.buttons .cancel {
+	background-image:  url(${fam.icon( name: 'arrow_left')});
+}
+
+.buttons .list, .buttons .backToList {
+	background-image: url(${fam.icon( name: 'application')});
+}
+.buttons .list, .buttons .otherList {
+	background-image: url(${fam.icon( name: 'application_view_detail')});
+}
+
+.buttons .addAssociation {
+	background-image:  url(${fam.icon( name: 'application_add')});
+}
+.buttons .editAssociation {
+	background-image:  url(${fam.icon( name: 'application_edit')});
+}
+.buttons .removeAssociation,
+.buttons .deleteAssociation {
+	background-image:  url(${fam.icon( name: 'application_delete')});
+}
+
+.buttons .excel {
+	background-image: url(${fam.icon( name: 'page_excel')});
+}
+
+/* Hides the default navigation bar that is added by the Grails scaffolding */
+.nav { display: none; }
 
 /** END :: buttons **/
 
@@ -472,25 +481,3 @@ option.unlocked {
 	color: #006dba;
 	text-decoration: none;
 }
-
-.ui-dialog .assaySampleDetails li.title { border-bottom: 1px solid #666; }
-#showSampleDialog ul.assaySampleDetails li { padding: 0 3px; margin: 0; }
-.ui-dialog .assaySampleDetails li label, .ui-dialog .assaySampleDetails li span { padding: 3px 0; }
-.ui-dialog .assaySampleDetails label { border-right: 1px solid #666; }
-.ui-dialog .assaySampleDetails span.value { width: 250px; display: inline-block; *display: inline; zoom: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-
-.uploadContainer { display: inline-block; *display: inline; zoom: 1 }
-
-.warningSampleContainsData { display: none; }
-
-/* Makes sure the filenames in the dialog don't exceed 200px */
-.blok_data { display: inline-block; zoom: 1; *display: inline; width: 400px; vertical-align: top;}
-
-.importProcessedFiles td { vertical-align: middle; padding-top: 2px; padding-bottom: 2px; }
-
-/* Classification table */
-.filter { margin-bottom: 10px; line-height: 3em; text-align: right; float: right; margin-top: -3em; }
-.filter label { vertical-align: inherit; text-align: right; line-height: 26px; margin-right: 5px;}
-.classification .total td { font-weight: bold; }
-.classification th.sample, .classification td.value { text-align: right; }
-.classification td.level .levelnumber { display: inline-block; width: 20px; *display: inline; zoom: 1; }

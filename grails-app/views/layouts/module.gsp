@@ -53,7 +53,7 @@
 		<% /* Import jquery, jquery UI and jquery DataTables */ %>
 		<g:javascript library="jquery" plugin="jquery" />
 		<jqui:resources theme="cupertino" themeCss="${resource(dir: 'css/cupertino', file: 'jquery-ui-1.8.13.custom.css', plugin: 'dbxpModuleBase' )}" />
-		<jqDT:resources jqueryUI="${true}" />
+		<jqDT:resources jqueryUI="${true}" type="js" />
 		
 		<% /* Import datatables style sheet */ %>
 		<link rel="stylesheet" href="${resource(dir: 'css', file: 'datatables.css', plugin: 'dbxpModuleBase')}"/>
@@ -98,7 +98,6 @@
 				
 		*/ %>
 		<script type="text/javascript" src="${resource(dir: 'js', file: 'paginate.js', plugin: 'dbxpModuleBase')}"></script>
-		<link rel="stylesheet" href="${resource(dir: 'css', file: 'buttons.css', plugin: 'dbxpModuleBase')}"/>
 		
 		<g:layoutHead/>
 	
