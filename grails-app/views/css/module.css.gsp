@@ -1,3 +1,6 @@
+/**
+ * This file should not be called directly, but only via css controller module action
+ */
 body {
 	margin: 0;
 	padding: 0;
@@ -96,7 +99,7 @@ ul.topnav li span {
 	width: 17px;
 	height: 35px;
 	float: right;
-	background: url(../images/topnav/subnav_btn.gif) no-repeat right top;
+	background: url(${g.resource( dir: 'images/topnav', file: 'subnav_btn.gif' )}) no-repeat right top;
 }
 
 ul.topnav li span.subhover {
@@ -145,8 +148,8 @@ html ul.topnav li ul.subnav li a:hover {
 	background-color: white;
 }
 
-ul.topnav li.user_info { float: right; padding: 10px 5px; }
-ul.topnav li.user_info:hover { background-color: white; }
+ul.topnav li.user_info { float: right; padding: 10px 5px 10px 20px; background: transparent url(${fam.icon( name: 'user' )}) center left no-repeat; }
+ul.topnav li.user_info:hover { background-color: transparent; }
 ul.topnav li.user_info a { background-image: none; float: none; display: inline; text-decoration: underline; padding: 0; margin: 0; }
 
 /** END :: topnav **/
@@ -182,7 +185,7 @@ ul.topnav li.user_info a { background-image: none; float: none; display: inline;
 	margin-bottom: 10px;
 	margin-top: 10px;
 
-	background: #f7f7f7 url(../plugins/famfamfam-1.0.1/images/icons/information.png) 10px 10px no-repeat;
+	background: #f7f7f7 url(${fam.icon( name: 'user' )}) 10px 10px no-repeat;
 	padding: 10px 10px 10px 33px;
 }
 
@@ -191,7 +194,7 @@ ul.topnav li.user_info a { background-image: none; float: none; display: inline;
 	margin-bottom: 10px;
 	margin-top: 10px;
 
-	background: #FAE6E6 url(../plugins/famfamfam-1.0.1/images/icons/information.png) 10px 10px no-repeat;
+	background: #FAE6E6 url(${fam.icon( name: 'information' )}) 10px 10px no-repeat;
 	padding: 10px 10px 10px 33px;
 }
 
@@ -241,7 +244,7 @@ td, th {
 }
 
 th {
-	background: #fff url(../images/tables/shadow.jpg);
+	background: #fff url(${g.resource( dir: 'images/tables', file: 'shadow.jpg')});
 	color: #666;
 	font-size: 11px;
 	font-weight: bold;
@@ -263,11 +266,11 @@ th.asc a, th.desc a {
 }
 
 th.asc a {
-	background-image: url(../images/tables/sorted_asc.gif);
+	background-image: url(${g.resource( dir: 'images/tables', file: 'sorted_asc.gif')});
 }
 
 th.desc a {
-	background-image: url(../images/tables/sorted_desc.gif);
+	background-image: url(${g.resource( dir: 'images/tables', file: 'sorted_desc.gif')});
 }
 
 .odd {
@@ -334,38 +337,38 @@ th.desc a {
 }
 
 .buttons input.delete, .buttons a.delete {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/delete.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'delete' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
 .buttons input.edit, .buttons a.edit {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/application_edit.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'application_edit' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
 .buttons input.save, .buttons a.save {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/accept.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'accept' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
 .buttons input.create, .buttons a.create {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/add.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'add' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
 .buttons input.backToList, .buttons a.backToList {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/application.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'application' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
 .buttons input.cancel, .buttons a.cancel {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/delete.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'delete' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 	font-weight: normal;
 }
 
 .buttons input.otherList, .buttons a.otherList {
-	background: transparent url(../plugins/famfamfam-1.0.1/images/icons/application_view_detail.png) 5px 50% no-repeat;
+	background: transparent url(${fam.icon( name: 'application_view_detail' )}) 5px 50% no-repeat;
 	padding-left: 28px;
 }
 
@@ -423,7 +426,7 @@ td.buttons input {
 
 /* START :: special select option styles */
 option.addMore {
-	background: url(../plugins/famfamfam-1.0.1/images/icons/add.png) no-repeat left top;
+	background: url(${fam.icon( name: 'add' )}) no-repeat left top;
 	background-color: #333;
 	padding-left: 18px;
 	height: 16px;
@@ -432,7 +435,7 @@ option.addMore {
 }
 
 option.modify {
-	background: url(../plugins/famfamfam-1.0.1/images/icons/layout_add.png) no-repeat left top;
+	background: url(${fam.icon( name: 'modify' )}) no-repeat left top;
 	background-color: #333;
 	padding-left: 18px;
 	height: 16px;
@@ -441,7 +444,7 @@ option.modify {
 }
 
 option.locked {
-	background: url(../plugins/famfamfam-1.0.1/images/icons/lock.png) no-repeat left top;
+	background: url(${fam.icon( name: 'lock' )}) no-repeat left top;
 	padding-left: 18px;
 }
 
@@ -452,7 +455,7 @@ option.unlocked {
 /* END :: special select option styles */
 
 .spinner {
-    background: url(../images/spinner.gif) no-repeat left top;
+    background: url(${g.resource( dir: 'images', file: 'spinner.gif' )}) no-repeat left top;
     width: 16px;
     height: 16px;
     display: none;

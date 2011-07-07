@@ -48,7 +48,7 @@
 		</script>
 
 		<% /* Import stylesheets for basic look and feel */ %>
-		<link rel="stylesheet" href="${resource(dir: 'css', file: 'module.css', plugin: 'dbxpModuleBase' )}"/>
+		<link rel="stylesheet" href="${createLink( controller: 'css', action: 'module' )}" type="text/css"/>
 		
 		<% /* Import jquery, jquery UI and jquery DataTables */ %>
 		<g:javascript library="jquery" plugin="jquery" />
