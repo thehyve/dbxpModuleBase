@@ -1,5 +1,4 @@
 package org.dbxp.moduleBase
-import org.codehaus.groovy.grails.commons.ApplicationHolder
 
 @NoAuthenticationRequired
 class CssController {
