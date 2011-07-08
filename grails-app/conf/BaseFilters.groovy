@@ -1,6 +1,5 @@
 import javax.servlet.http.HttpServletResponse
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
-
 import org.dbxp.moduleBase.AuthenticationRequired
 import org.dbxp.moduleBase.NoAuthenticationRequired
 import org.dbxp.moduleBase.Study
@@ -79,7 +78,7 @@ class BaseFilters {
 					// Set the flag loggingIn to true, so the system can synchronize after logging in
 					// See also synchronizeAuthorization Filter
 					session.loggingIn = true;
-					
+
                     redirect(url: loggedIn.redirect)
                     return false
                 }

@@ -1,8 +1,5 @@
 package org.dbxp.moduleBase
 
-import org.codehaus.groovy.grails.commons.ConfigurationHolder
-
-
 class LogoutController {
 	def gscfService;
 	

@@ -1,7 +1,7 @@
 package org.dbxp.moduleBase
 
-import org.springframework.web.context.request.RequestContextHolder
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
+import org.springframework.web.context.request.RequestContextHolder
 
 class AuthenticationService {
 	def gscfService
@@ -80,15 +80,7 @@ class AuthenticationService {
 		// Something is wrong if the code reaches this point.
 		return [ "status": false ]
     }
-	
-	public User getLoggedInUser() {
-		
-	}
-	
-	public void logIn() {
-		
-	}
-	
+
 	/**
 	 * Searches for the given GSCF user in the database, and updates it if necessary
 	 * @param user	JSON object that resulted from the GSCF getUser call
