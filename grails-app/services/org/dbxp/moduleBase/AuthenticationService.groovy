@@ -80,6 +80,14 @@ class AuthenticationService {
 		// Something is wrong if the code reaches this point.
 		return [ "status": false ]
     }
+	
+	/**
+	 * Returns the user that is currently logged in. 
+	 * @return	Currently logged in user, null if no user is logged in
+	 */
+	public User getLoggedInUser() {
+		return getHttpSession()?.user ?: null;
+	}
 
 	/**
 	 * Searches for the given GSCF user in the database, and updates it if necessary

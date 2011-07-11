@@ -22,7 +22,10 @@
 		class 'sortable' can be added to the table to enable sorting
 		class 'paginate' can be added to the table to enable pagination
 		class 'hideInfo' can be added to hide the information about the number of items
-		
+	
+	If you have added 'sortable' to the table, all column headers will be clickable to sort on. If you
+	want a column not to be sortable, you can add class 'nonsortable' to the th.
+	
 	Serverside tables:
 	
 	When you have a table with lots of rows, creating the HTML table can take a while. You can also 

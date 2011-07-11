@@ -4,10 +4,15 @@
 body {
 	margin: 0;
 	padding: 0;
-	font: 11px normal Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	font-weight: normal;
+	font-family: Arial, Helvetica, sans-serif;
 	background-color: #fff;
 	text-align: center;
 }
+
+/* Set font on different elements */
+.buttons input { font-family: Arial, Helvetica, sans-serif; }
 
 .container { margin: 0 auto; text-align: left; }
 .ui-dialog { text-align: left; }

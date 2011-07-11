@@ -123,13 +123,6 @@
 		</div>
 		<div class="container">
 			<div id="content">
-				<g:if test="${flash.message}">
-					<p class="message">${flash.message.toString()}</p>
-				</g:if>
-				<g:if test="${flash.error}">
-					<p class="error">${flash.error.toString()}</p>
-				</g:if>
-				
 				<g:layoutBody/>
 			</div>
 
