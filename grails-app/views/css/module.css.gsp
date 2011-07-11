@@ -346,6 +346,9 @@ td.buttons input {
 
 .buttons a.disabled { color: #aaa; cursor: default; }
 
+.buttons .view, .buttons .show {
+	background-image:  url(${fam.icon( name: 'magnifier')});
+}
 .buttons .add, .buttons .create {
 	background-image: url(${fam.icon( name: 'add')});
 }
@@ -369,7 +372,7 @@ td.buttons input {
 .buttons .list, .buttons .backToList {
 	background-image: url(${fam.icon( name: 'application')});
 }
-.buttons .list, .buttons .otherList {
+.buttons .otherList {
 	background-image: url(${fam.icon( name: 'application_view_detail')});
 }
 
