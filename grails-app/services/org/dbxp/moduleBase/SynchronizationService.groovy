@@ -11,7 +11,7 @@ class SynchronizationService {
     boolean eager = false       // When set to true, this method fetches data about all studies from GSCF. Otherwise, it will only look at the
 								// studies marked as dirty in the database. Defaults to false.
 
-    static transactional = true
+    static transactional = 'mongo'//true
 
 	/**
 	 * Initialize this synchronizationService

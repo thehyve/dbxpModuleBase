@@ -1,10 +1,8 @@
 package org.dbxp.moduleBase
 
-import grails.converters.*
+import grails.converters.JSON
 
-import org.codehaus.groovy.grails.commons.ConfigurationHolder
-
-/** 
+/**
  *
  * @author Robert Horlings (robert@isdat.nl)
  * @since 20101229
@@ -14,8 +12,8 @@ import org.codehaus.groovy.grails.commons.ConfigurationHolder
  *
  * This class provides a REST-full service for getting and setting the data
  * in the Metagenomics Module. The service consists of several
- * resources listed below. So far, all resources are GET resoruces, i.e. we
- * do not use PUT, POST or DELETE. Because we are using Grails' web libaries,
+ * resources listed below. So far, all resources are GET resources, i.e. we
+ * do not use PUT, POST or DELETE. Because we are using Grails' web libraries,
  * each resource corresponds to exactly one action of this controller.
  *
  *
@@ -214,13 +212,13 @@ class RestController {
 	/**
 	 * Return list of measurement data.
 	 *
-	 * @param assayTokes
+	 * @param assayToken
 	 * @param measurementToken. Restrict the returned data to the measurementTokens specified here.
 	 * 						If this argument is not given, all samples for the measurementTokens are returned.
-	 * 						Multiple occurences of this argument are possible.
+	 * 						Multiple occurrences of this argument are possible.
 	 * @param sampleToken. Restrict the returned data to the samples specified here.
 	 * 						If this argument is not given, all samples for the measurementTokens are returned.
-	 * 						Multiple occurences of this argument are possible.
+	 * 						Multiple occurrences of this argument are possible.
 	 * @param boolean verbose. If this argument is not present or it's value is true, then return
 	 *                      the date in a redundant format that is easier to process.
 	 *						By default, return a more compact JSON object as follows.
@@ -286,8 +284,10 @@ class RestController {
 	 * Resulting JSON object:
 	 * http://localhost:8184/metagenomics/rest/getMeasurementData/query?
 	 * 	assayToken=PPSH-Glu-A&
+     * 	measurementToken=sodium (Na+)&
+     * 	measurementToken=potassium (K+)&
 	 *	measurementToken=total carbon dioxide (tCO)
-	 *
+     *
 	 * Resulting JSON object:
 	 * [ ["1_A","2_A","3_A","4_A","5_A"],
 	 *   ["sodium (Na+)","potassium (K+)","total carbon dioxide (tCO)"],
