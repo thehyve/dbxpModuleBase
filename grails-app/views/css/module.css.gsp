@@ -313,6 +313,7 @@ th.desc a {
 	font-size: 10px;
 	font-weight: bold;
 	margin-right: 15px;
+	padding-right: 6px;
 	padding-top: 2px;
 	padding-bottom: 2px;
 	line-height: 20px;
