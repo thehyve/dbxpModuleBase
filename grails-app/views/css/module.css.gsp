@@ -318,7 +318,7 @@ th.desc a {
 	line-height: 20px;
 	padding-left: 26px;	
 
-	background-image: transparent;
+	background-color: transparent;
 	background-repeat: no-repeat;
 	background-position: 3px 50%;
 
@@ -329,7 +329,7 @@ th.desc a {
 /* Links in the buttons section should look just like buttons in the
    same section */
 .buttons input {
-	background-color: #fff;
+	background-color: transparent;
 	border-width: 0;
 	cursor: pointer;
 	overflow: visible;
