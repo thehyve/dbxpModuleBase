@@ -1,5 +1,7 @@
 package org.dbxp.moduleBase
 
+import java.io.Serializable;
+
 import grails.converters.JSON
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
 import org.springframework.web.context.request.RequestContextHolder
@@ -11,9 +13,8 @@ import org.codehaus.groovy.grails.web.json.JSONArray
  * @author Robert Horlings (robert@isdat.nl)
  * @version 0.9
  */
-class GscfService {
+class GscfService implements Serializable {
 
-	def config = ConfigurationHolder.config
 	static transactional = false
 
 	/**
@@ -38,7 +39,7 @@ class GscfService {
 	 * @return			String with URL for the current request 
 	 */
 	String paramsMapToURL( params, appendParameters = true ) {
-		def returnUrl = "$config.grails.serverURL"
+		def returnUrl = ConfigurationHolder.config.grails.serverURL
 
 		// make a clone so we can manipulate it's value
 		def paramsClone = params?.clone()
@@ -85,7 +86,7 @@ class GscfService {
 	 * @return URL to redirect the user to
 	 */
 	public String urlAuthRemote(params, token, appendParameters = true) {
-		def redirectURL = "$config.gscf.baseURL/login/auth_remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token&"
+		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/login/auth_remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token&"
 		def returnUrl = paramsMapToURL( params, appendParameters );
 
 		redirectURL + 'returnUrl=' + returnUrl.encodeAsURL()
@@ -103,7 +104,7 @@ class GscfService {
 	 * @return URL to redirect the user to
 	 */
 	public String urlLogoutRemote(params, token, appendReturnUrl = false, appendParameters = true ) {
-		def redirectURL = "$config.gscf.baseURL/logout/remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token"
+		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/logout/remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token"
 		
 		if( appendReturnUrl ) {
 			def returnUrl = paramsMapToURL( params, appendParameters );
@@ -501,7 +502,7 @@ class GscfService {
 	 * @return URL to redirect the user to
 	 */
 	String urlViewStudy(String studyToken) {
-		config.gscf.baseURL + '/study/showByToken/' + studyToken
+		ConfigurationHolder.config.gscf.baseURL + '/study/showByToken/' + studyToken
 	}
 
 	/**
@@ -510,7 +511,7 @@ class GscfService {
 	 * @return URL to redirect the user to
 	 */
 	String urlAddStudy(String studyToken) {
-		config.gscf.baseURL + config.gscf.addStudyPath
+		ConfigurationHolder.config.gscf.baseURL + ConfigurationHolder.config.gscf.addStudyPath
 	}
 
 	/**
@@ -519,7 +520,7 @@ class GscfService {
 	 * @return URL to redirect the user to
 	 */
 	String urlRegisterSearch() {
-		config.gscf.baseURL + config.gscf.registerSearchPath
+		ConfigurationHolder.config.gscf.baseURL + ConfigurationHolder.config.gscf.registerSearchPath
 	}
 
 	/**
@@ -528,7 +529,7 @@ class GscfService {
 	 * @return url String
 	 */
 	String restURL() {
-		config.gscf.baseURL + '/rest'
+		ConfigurationHolder.config.gscf.baseURL + '/rest'
 	}
 
 	/**
@@ -537,7 +538,7 @@ class GscfService {
 	 * @return consumerID    String
 	 */
 	private String consumerID() {
-		config.module.consumerID
+		ConfigurationHolder.config.module.consumerID
 	}
 
 	/**
@@ -546,7 +547,7 @@ class GscfService {
 	 * @return moduleURL    String
 	 */
 	private String moduleURL() {
-		config.grails.serverURL
+		ConfigurationHolder.config.grails.serverURL
 	}
 
 }

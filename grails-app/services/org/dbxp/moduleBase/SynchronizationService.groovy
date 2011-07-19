@@ -97,7 +97,7 @@ class SynchronizationService {
 				
 				log.trace "  Not found locally. Creating an object: " + domainClass;
 	            
-				localStudy = domainClass.newInstance(studyToken: gscfStudy.studyToken, gscfVersion: gscfStudy.version, isDirty: true)
+				localStudy = domainClass.newInstance(studyToken: gscfStudy.studyToken, gscfVersion: gscfStudy.version, isDirty: true, isPublic: gscfStudy.published && gscfStudy[ 'public' ] )
 			} else if( gscfVersion != localStudy.gscfVersion ){
 				log.trace "  Mark existing study dirty"
 				// Mark existing study dirty if the versions don't match 
@@ -113,7 +113,7 @@ class SynchronizationService {
 		if( studyTokens )
 			unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "tokens": studyTokens, "user": user ] );
 		else
-			unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
+			unknownStudies = Study.findAll( "FROM Study s WHERE exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
 		
 		unknownStudies?.each {
 			it.isDirty = true;
@@ -213,7 +213,7 @@ class SynchronizationService {
 
                     // If it doesn't exist, create a new object
 					def domainClass = determineClassFor( "Study" );
-                    studyFound = domainClass.newInstance(studyToken: gscfStudy.studyToken, name: gscfStudy.title, gscfVersion: gscfStudy.version, isDirty: true)
+                    studyFound = domainClass.newInstance(studyToken: gscfStudy.studyToken, name: gscfStudy.title, gscfVersion: gscfStudy.version, isDirty: true, isPublic: gscfStudy.published && gscfStudy[ 'public' ])
                     studyFound.save()
 
                     // Synchronize authorization and study assays (since the study itself is already synchronized)
@@ -339,6 +339,7 @@ class SynchronizationService {
         study.name = newStudy.title
 		study.gscfVersion = newStudy.version
         study.isDirty = false
+		study.isPublic = newStudy.published && newStudy[ 'public' ]
         study.save(flush: true)
 
         return study

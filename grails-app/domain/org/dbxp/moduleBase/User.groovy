@@ -4,8 +4,8 @@ package org.dbxp.moduleBase
  * User is used to track the activity of a user within the Metagenomics Module
  * And data uploaded is linked to the user that provided the data
  */
-class User {
-		
+class User implements Serializable {
+	
     Long identifier // ID of GSCF user
     String username   // Username of GSCF user
 	Boolean isAdministrator

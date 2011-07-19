@@ -1,11 +1,13 @@
 package org.dbxp.moduleBase
 
+import java.io.Serializable;
+
 /**
 * Minimal representation of a sample. The sampleToken is the link with a sample object in GSCF.
 *
 * @see GscfService.getSample
 */
-class Sample {
+class Sample implements Serializable {
 	String  sampleToken		// Unique within an assay
 	String  name
 	String  subject

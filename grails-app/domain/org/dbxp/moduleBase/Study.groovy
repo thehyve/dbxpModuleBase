@@ -1,16 +1,24 @@
 package org.dbxp.moduleBase
 
+import java.io.Serializable;
+
 /**
  * Minimal representation of a study. The studyToken is the link with a study object in GSCF.
  * 
  * @see GscfService.getStudy
  */
-class Study {
+class Study implements Serializable {
 	def gscfService
 	
 	String studyToken
 	String name
 
+	// If a study is set to be public, everyone can read it
+	// Notice: this implementation differs from the one in GSCF
+	// because this study is set to isPublic only 
+	// if gscfStudy is public & published
+	Boolean isPublic = false;
+	
 	// If a study is set to be dirty, it should be updated
 	// the next time synchronization takes place.
 	Boolean isDirty = true;
@@ -114,4 +122,41 @@ class Study {
 			return false
 		}
 	}
+	
+	/**
+	 * Returns all studies this user can read
+	 * @param user	User for which the studies should be returned
+	 * @return		List of study objects
+	 */
+	public static def giveReadableStudies( User user ) {
+		if( user ) 
+			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canRead = true )", [ "user": user ] )
+		else
+			return Study.executeQuery( "SELECT DISTINCT s FROM Study s WHERE s.isPublic = true" )
+	}
+	
+	/**
+	* Returns all studies this user can write
+	* @param user	User for which the studies should be returned
+	* @return		List of study objects
+	*/
+   public static def giveWritableStudies( User user ) {
+	   if( user )
+		   return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canWrite = true )", [ "user": user ] )
+	   else
+		   return []
+   }
+   
+   
+   /**
+   * Returns all studies this user owns
+   * @param user	User for which the studies should be returned
+   * @return		List of study objects
+   */
+  public static def giveMyStudies( User user ) {
+	  if( user )
+		  return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.isOwner = true )", [ "user": user ] )
+	  else
+		  return []
+  }
 }

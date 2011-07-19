@@ -1,12 +1,14 @@
 package org.dbxp.moduleBase
 
+import java.io.Serializable;
+
 /**
  * This class provides the kind of authorization a user has on a specific study
  * 
  * @author robert
  *
  */
-class Auth {
+class Auth implements Serializable {
 	boolean canRead
 	boolean canWrite
 	boolean isOwner
