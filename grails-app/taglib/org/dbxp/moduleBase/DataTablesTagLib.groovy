@@ -1,4 +1,4 @@
-package dbxpmodulebase
+package org.dbxp.moduleBase
 
 class DataTablesTagLib {
     static namespace = 'dt';
@@ -23,7 +23,7 @@ class DataTablesTagLib {
         if(!(attrs.class == null))
             strClass = " " + attrs.class;
 
-        out << "<table id='"+attrs.id+"_table' class='datatables"+strClass+"'>";
+        out << "<table id='"+attrs.id+"_table' class='datatables"+strClass+"' rel='" + attrs.rel + "'>";
         out << body{};
         out << "</table>";
     }
