@@ -97,7 +97,7 @@
 			http://www.datatables.net/examples/data_sources/server_side.html for more information about this method.		 
 				
 		*/ %>
-		<script type="text/javascript" src="${resource(dir: 'js', file: 'paginate.js', plugin: 'dbxpModuleBase')}"></script>
+		<script type="text/javascript" src="${resource(dir: 'js', file: 'datatables.js', plugin: 'dbxpModuleBase')}"></script>
 		
 		<g:layoutHead/>
 	

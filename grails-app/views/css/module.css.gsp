@@ -425,6 +425,19 @@ td.buttons input {
 
 /** END :: pagination buttons **/
 
+/* START :: datatables */
+.dataTables_wrapper .buttonColumn {
+    width: 15px;
+    text-align:center;
+}
+
+.dataTables_wrapper .selectColumn {
+    width: 15px;
+    text-align:center;
+}
+
+/** END :: datatables **/
+
 /* START :: ontology autocomplete */
 .ui-autocomplete .ui-menu-item {
 	font-size: 10px;

@@ -39,11 +39,15 @@
 	
 	Where the /url/to/ajaxData is a method that returns the proper data for this table. See 
 	http://www.datatables.net/examples/data_sources/server_side.html for more information about this method.
+
+	// TODO: Test Serverside code
+	// TODO: Test in Internet Explorer
  */
 
 var numElements = new Array();		// Hashmap with the key being the id of the table, in order to facilitate multiple tables
 var elementsSelected = new Array();	// Hashmap with the key being the id of the table, in order to facilitate multiple tables
-var tableType = new Array();		// Hashmap with the key being the id of the table, in order to facilitate multiple tables	
+var tableType = new Array();		// Hashmap with the key being the id of the table, in order to facilitate multiple tables
+var selectType = new Array();       // Hashmap with the key being the id of the table, in order to facilitate multiple tables
 var allElements = new Array();		// Hashmap with the key being the id of the table, in order to facilitate multiple tables
 
 function initializePagination( selector ) {
@@ -56,8 +60,32 @@ function initializePagination( selector ) {
 		var $el = $(el);
 		
 		tableType[ $el.attr( 'id' ) ] = "clientside";
-		
-		$el.dataTable({ 
+
+        var id = $el.attr( 'id' );
+        elementsSelected[ id ] = new Array();
+
+        if($el.hasClass( 'selectMulti' )) {
+            selectType[ $el.attr( 'id' ) ] = "selectMulti";
+            $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'><input id='"+id+"_checkAll' class='' type='checkbox' onClick='clickCheckAll(this);'></th>");
+            $("#"+ id + ' tbody tr').each(function(idxrow, row) {
+                rowid = $(row).attr('id');
+                rowid = rowid.replace("rowid_","");
+                $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='checkbox' onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
+            });
+
+        } else if($el.hasClass( 'selectOne' )) {
+            selectType[ $el.attr( 'id' ) ] = "selectOne";
+            $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'></th>");
+            $("#"+ id + ' tbody tr').each(function(idxrow, row) {
+                rowid = $(row).attr('id');
+                rowid = rowid.replace("rowid_","");
+                $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='radio'  onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
+            });
+        } else {
+            selectType[ $el.attr( 'id' ) ] = "selectNone";
+        }
+
+        $el.dataTable({
 			bJQueryUI: true, 
 			bAutoWidth: false,
 			bFilter: $el.hasClass( 'filter' ), 
@@ -71,8 +99,15 @@ function initializePagination( selector ) {
 			aoColumnDefs: [
 				{ "bSortable": false, "aTargets": ["nonsortable"] },				// Disable sorting on all columns with th.nonsortable
 				{ "sSortDataType": "formatted-num", "aTargets": ["formatted-num"] }	// Make sorting possible on formatted numbers
-			]						
+			],
+            fnDrawCallback: function() {
+                updateCheckAll( $el );
+            }
 		});
+
+        numElements[ id ] = 0;
+        allElements[ id ] = new Array();
+        $("#"+id+"_info").after("<span id='"+id+"_selectinfo'></span>");
 	});
 
 	// Initialize serverside pagination
@@ -85,7 +120,7 @@ function initializePagination( selector ) {
 		
 		tableType[ id ] = "serverside";
 		elementsSelected[ id ] = new Array();
-		
+
 		$el.dataTable({ 
 			"bProcessing": true,
 			"bServerSide": true,
@@ -129,8 +164,10 @@ function initializePagination( selector ) {
 				} );
 			}			
 		});
+
+        $("#"+id+"_info").after("<span id='"+id+"_selectinfo'></span>");
 	});
-	
+
 	// Show hide paginated buttons
 	showHidePaginatedButtons( selector );
 }
@@ -171,8 +208,6 @@ function tableWrapperHasClass( tableWrapper, className ) {
 	return $(tableWrapper).find( 'table' ).hasClass( className );
 }
 
-
-
 /**********************************************************************
  * 
  * These function are used for handling selectboxes and select-all boxes. In fact, there are
@@ -190,14 +225,108 @@ function tableWrapperHasClass( tableWrapper, className ) {
  * 
  **********************************************************************/
 
-/**
- * Check selectboxes that had been selected before
- * @param wrapper
- */
+function clickRow( inputrow ) {
+    var input = $(inputrow);
+	var paginatedTable = input.closest( '.datatables' );
+	var dataTable = paginatedTable.closest( '.dataTables_wrapper' );
+	var tableId = paginatedTable.attr( 'id' );
+
+	// If the input is a normal checkbox, the user clicked on it. Update the elementsSelected array
+	if( selectType[ tableId ] == "selectMulti" ) {
+		var arrayPos = jQuery.inArray( parseInt( input.val() ), elementsSelected[ tableId ] );
+		if( input.attr( 'checked' ) ) {
+			// Put the id in the elementsSelected array, if it is not present
+			if( arrayPos == -1 ) {
+				elementsSelected[ tableId ][ elementsSelected[ tableId ].length ] = parseInt( input.val() );
+			}
+		} else {
+			// Remove the id from the elementsSelected array, if it is present
+			if( arrayPos > -1 ) {
+				elementsSelected[ tableId ].splice( arrayPos, 1 );
+			}
+		}
+
+        var checkAll = $( '#'+tableId+'_checkAll', paginatedTable );
+        updateCheckAll( inputrow );
+	} else {
+        // Assumption: selectType[ tableId ] == "selectOne"
+        elementsSelected[ tableId ][0] = parseInt( input.val() );
+    }
+}
+
+function clickCheckAll( input ) {
+
+    var paginatedTable = $(input).closest( '.datatables' );
+    var tableId = paginatedTable.attr( 'id' );
+	var checkAll = $( '#'+tableId+'_checkAll', paginatedTable );
+
+    var inputsOnScreen = $( 'tbody input[type=checkbox]', paginatedTable );
+
+    if( checkAll.attr( 'checked' ) ) {
+        // Select all on current page
+        for( var i = 0; i < inputsOnScreen.length; i++ ) {
+            var input = $(inputsOnScreen[ i ] );
+            if( input.attr( 'id' ) != "checkAll" ) {
+                input.attr( 'checked', true );
+                elementsSelected[ tableId ][ elementsSelected[ tableId ].length ] = parseInt( input.val() );
+            }
+        }
+    } else {
+        // Deselect all on current page
+        for( var i = 0; i < inputsOnScreen.length; i++ ) {
+            var input = $(inputsOnScreen[ i ] );
+            if( input.attr( 'id' ) != "checkAll" ) {
+                var arrPos = jQuery.inArray( parseInt( input.val() ), elementsSelected[ tableId ] );
+                if( arrPos > -1 ) {
+                    input.attr( 'checked', false );
+                    elementsSelected[ tableId ].splice( arrPos, 1 );
+                }
+            }
+        }
+        checkAll.removeClass( 'transparent' );
+    }
+	updateCheckAll( input );
+}
+
+function updateCheckAll( input ) {
+
+    var paginatedTable = $(input).closest( '.datatables' );
+    var inputsOnScreen = $( 'tbody input[type=checkbox]', paginatedTable );
+
+    var blnSelected = false;
+    var blnAllSelected = true;
+
+    for( var i = 0; i < inputsOnScreen.length; i++ ) {
+        var input = $(inputsOnScreen[ i ] );
+        if( input.attr( 'id' ) != "checkAll" ) {
+            if(input.attr( 'checked' )) {
+                blnSelected = true;
+            } else {
+                blnAllSelected = false;
+            }
+        }
+    }
+
+    var tableId = paginatedTable.attr( 'id' );
+    var checkAll = $( '#'+tableId+'_checkAll', paginatedTable );
+
+    checkAll.removeClass( 'transparent' );
+    if(blnAllSelected) {
+        checkAll.attr('checked', true);
+	} else {
+		if(blnSelected) {
+            checkAll.addClass( 'transparent' );
+        }
+        checkAll.attr('checked', blnSelected);
+    }
+
+    $("#"+tableId+"_selectinfo").html(" ("+elementsSelected[ tableId ].length+" selected)");
+}
+
 function checkSelectedCheckboxes( wrapper ) {
-	var inputsOnScreen = $( 'input[type=checkbox]', $(wrapper) );
+	var inputsOnScreen = $( 'tbody input[type=checkbox]', $(wrapper) );
 	var tableId = $( ".datatables", $(wrapper) ).attr( 'id' );
-	
+
 	for( var i = 0; i < inputsOnScreen.length; i++ ) {
 		var input = $(inputsOnScreen[ i ] );
 		if( input.attr( 'id' ) != "checkAll" ) {
@@ -208,188 +337,46 @@ function checkSelectedCheckboxes( wrapper ) {
 			}
 		}
 	}
+    updateCheckAll( wrapper );
 }
 
-function checkAllPaginated( input ) {
-	var paginatedTable = $(input).closest( '.datatables' );
-	var table_id = paginatedTable.attr( 'id' );
-	
-	switch( tableType[ table_id ] ) {
-		case "clientside":	return checkAllPaginatedClientSide( paginatedTable );
-		case "serverside":	return checkAllPaginatedServerSide( paginatedTable );
-	}
-}
+function submitPaginatedForm( id, url, nothingInFormMessage ) {
 
-function checkAllPaginatedClientSide( paginatedTable ) {
-	var checkAll = $( '#checkAll', paginatedTable );
-	
-	var oTable = paginatedTable.dataTable();
-	var inputs = $('input[type=checkbox]', oTable.fnGetNodes())
-	
-	// If any of the inputs is checked, uncheck all. Otherwise, check all
-	var check = false;
-	
-	for(var i = 0; i < inputs.length; i++ ) {
-		if( !$(inputs[i]).attr( 'checked' ) ) {
-			check = true;
-			break;
-		}
-	}
-	
-	inputs.each( function( idx, el ) {
-		$(el).attr( 'checked', check );
-	})
-	
-	updateCheckAllClientSide( checkAll );
-}
+    var form = $("#"+id+"_form");
 
-function checkAllPaginatedServerSide( paginatedTable ) {
-	var tableId = paginatedTable.attr( 'id' );
-	var checkAll = $( '#checkAll', paginatedTable );
-	
-	// If everything is selected, the action is to deselect everything. Otherwise
-	// select everything
-	if( numElements[ tableId ] == elementsSelected[ tableId ].length ) {
-		elementsSelected[ tableId ] = new Array();
-	} else {
-		// Otherwise, select everything. We make a copy of the allElements list, because we 
-		// need to copy by value
-		elementsSelected[ tableId ] = new Array();
-		$.each( allElements[ tableId ] , function( idx, value ) {
-			elementsSelected[ tableId ][ elementsSelected[ tableId ].length ] = value;
-		});
-	}
-	
-	checkSelectedCheckboxes( paginatedTable.parent() );
-	updateCheckAll( checkAll );
-}
-
-function updateCheckAll( input ) {
-	var paginatedTable = $(input).closest( '.datatables' );
-	
-	// Determine type
-	var tableId = paginatedTable.attr( 'id' );
-	
-	switch( tableType[ tableId ] ) {
-		case "clientside":	return updateCheckAllClientSide( input );
-		case "serverside":	return updateCheckAllServerSide( input );
-	}
-}
-
-function updateCheckAllClientSide( input ) {
-	var paginatedTable = $(input).closest( '.datatables' );
-	var dataTable = paginatedTable.closest( '.dataTables_wrapper' );
-	
-	var checkAll = $( '#checkAll', paginatedTable );
-	
-	var oTable = paginatedTable.dataTable();
-	var inputs = $('input[type=checkbox]', oTable.fnGetNodes())
-	
-	// Is none checked, are all checked or are some checked
-	var numChecked = 0
-	for(var i = 0; i < inputs.length; i++ ) {
-		if( $(inputs[i]).attr( 'checked' ) ) {
-			numChecked++;
-		}
-	}
-	
-	checkAll.attr( 'checked', numChecked > 0 );
-	
-	if( numChecked > 0 && numChecked < inputs.length ) {
-		checkAll.addClass( 'transparent' );
-	} else {
-		checkAll.removeClass( 'transparent' );
-	}
-}
-
-function updateCheckAllServerSide( input ) {
-	var paginatedTable = $(input).closest( '.datatables' );
-	var dataTable = paginatedTable.closest( '.dataTables_wrapper' );
-	var tableId = paginatedTable.attr( 'id' );
-	
-	// If the input is a normal checkbox, the user clicked on it. Update the elementsSelected array
-	if( $(input).attr( 'id' ) != "checkAll" ) {
-		var arrayPos = jQuery.inArray( parseInt( $(input).val() ), elementsSelected[ tableId ] );
-		if( $(input).attr( 'checked' ) ) {
-			// Put the id in the elementsSelected array, if it is not present
-			if( arrayPos == -1 ) {
-				elementsSelected[ tableId ][ elementsSelected[ tableId ].length ] = parseInt( $(input).val() );
-			}
-		} else {
-			// Remove the id from the elementsSelected array, if it is present
-			if( arrayPos > -1 ) {
-				elementsSelected[ tableId ].splice( arrayPos, 1 );
-			}
-		}
-	}
-	
-	var checkAll = $( '#checkAll', paginatedTable );
-	
-	checkAll.attr( 'checked', elementsSelected[ tableId ].length > 0 );
-	
-	if( elementsSelected[ tableId ].length > 0 && elementsSelected[ tableId ].length < numElements[ tableId ] ) {
-		checkAll.addClass( 'transparent' );
-	} else {
-		checkAll.removeClass( 'transparent' );
-	}
-}
-
-function submitPaginatedForm( form, url, tableSelector, nothingInFormMessage ) {
 	// Remove all inputs created before
 	$( '.created', form ).remove();
-	
+
 	// Find paginated form elements
-	var paginatedTable = $(tableSelector);
+	var paginatedTable = $("#"+id+"_table");
 	var tableId = paginatedTable.attr( 'id' );
-	var formFilled;
-	
-	switch( tableType[ tableId ] ) {
-		case "clientside":
-			var oTable = paginatedTable.dataTable();
-			var data = $( 'input', oTable.fnGetNodes() ).serializeArray();
-			
-			var formFilled = false
-			
-			$.each( data, function(idx, el) {
-				if( el.value != "" ) {
-					var input = $( '<input type="hidden" class="created">');
-					input.attr( 'name', el.name );
-					input.attr( 'value', el.value );
-					form.append( input );
-					formFilled = true;
-				}
-			});
-			break;
-		case "serverside":
-			var ids = elementsSelected[ tableId ];
-			formFilled = ( ids.length > 0 );
-			
-			$.each( ids, function(idx, id) {
-				var input = $( '<input type="hidden" class="created" name="ids">');
-				input.attr( 'value', id );
-				form.append( input );
-			});
-			break;
-	}
-	
-	
+
+    var ids = elementsSelected[ tableId ];
+    var formFilled = ( ids.length > 0 );
+
+    $.each( ids, function(idx, id) {
+        var input = $( '<input type="hidden" class="created" name="ids">');
+        input.attr( 'value', id );
+        form.append( input );
+    });
+
 	// Show a message if the form is not filled
 	if( !formFilled ) {
 		if( nothingInFormMessage != undefined ) {
 			alert( nothingInFormMessage );
 		}
-		
+
 		return false;
 	}
-	
+
 	// Set form method to POST in order to be able to handle all items
 	form.attr( 'method', 'POST' );
-	
+
 	if( url != '' )
 		form.attr( 'action', url );
-	
+
 	form.submit();
-	
+
 }
 
 $(function() { initializePagination(); });
