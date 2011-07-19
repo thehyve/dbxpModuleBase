@@ -6,7 +6,7 @@ class SynchronizationService {
     def gscfService
 	def grailsApplication
 
-    String sessionToken = ""    // Session token to use for communication
+    String sessionToken = null  // Session token to use for communication
     User user = null            // Currently logged in user. Must be set when synchronizing authorization
     boolean eager = false       // When set to true, this method fetches data about all studies from GSCF. Otherwise, it will only look at the
 								// studies marked as dirty in the database. Defaults to false.
@@ -69,10 +69,15 @@ class SynchronizationService {
 		
 		try {
 			studyVersions = gscfService.getStudyVersions( sessionToken );
+			log.trace "Retrieved study versions: " + studyVersions
+		} catch( NotAuthenticatedException e ) {
+			// If a not authenticated exception occurs, GSCF is probably not able to handle anonymous synchronization. This has
+			// been implemented only since july 2011 (r1968)
+			throw e
 		} catch( Exception e ) {
-			// If an exception occurs, most probably GSCF doesn't know the getStudyVersions call. This has only been implemented
+			// If another exception occurs, most probably GSCF doesn't know the getStudyVersions call. This has only been implemented
 			// since june 2011 (r1941)
-			throw new Exception( "In order to use synchronization, you need at least GSCF version 0.8.5 (r1941). Either update your GSCF instance or disable synchronization in the configuration (module.synchronization.perform = false)")
+			throw new Exception( "In order to use synchronization, you need at least GSCF version 0.8.5 (r1941). Either update your GSCF instance or disable synchronization in the configuration (module.synchronization.perform = false)", e)
 		}
 		
 		// Mark studies dirty that have a different version number in our database
@@ -110,10 +115,21 @@ class SynchronizationService {
 		// those studies are either deleted or authorization has changed
 		def unknownStudies
 
-		if( studyTokens )
-			unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "tokens": studyTokens, "user": user ] );
-		else
-			unknownStudies = Study.findAll( "FROM Study s WHERE exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
+		if( studyTokens ) {
+			if( user ) {
+				unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "tokens": studyTokens, "user": user ] );
+			} else {
+				unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND s.isPublic = true", [ "tokens": studyTokens ] );
+			}
+		} else {
+			if( user ) {
+				unknownStudies = Study.findAll( "FROM Study s WHERE exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
+			} else {
+				unknownStudies = Study.findAll( "FROM Study s WHERE s.isPublic = true" );
+			}
+		}
+		
+		log.trace "Marking " + unknownStudies?.size() + " studies as dirty since the authorization has changed";
 		
 		unknownStudies?.each {
 			it.isDirty = true;
@@ -329,17 +345,19 @@ class SynchronizationService {
             return null
         }
 
+		def publicStudy = newStudy.published && newStudy[ 'public' ];
+		
         // Mark study dirty to enable synchronization
         def auth = synchronizeAuthorization(study)
 
-        if (auth.canRead)
+        if (auth?.canRead || publicStudy)
             synchronizeStudyAssays(study)
 
         // Update properties and mark as clean
         study.name = newStudy.title
 		study.gscfVersion = newStudy.version
         study.isDirty = false
-		study.isPublic = newStudy.published && newStudy[ 'public' ]
+		study.isPublic = publicStudy
         study.save(flush: true)
 
         return study
@@ -466,7 +484,7 @@ class SynchronizationService {
      * Make sure synchronizationService.user is set beforehand
      *
      * @param study Study to synchronize authorization for
-     * @return Auth object for the given study and useror null is the study has been deleted
+     * @return Auth object for the given study and user or null is the study has been deleted
      */
     public Auth synchronizeAuthorization(Study study) {
         if (!performSynchronization())
@@ -474,7 +492,8 @@ class SynchronizationService {
 		
         // If the user is not set, we can't save anything to the database.
         if (user == null) {
-            throw new Exception("Property user of SynchronizationService must be set to the currently logged in user")
+            log.warn "Property user of SynchronizationService must be set to the currently logged in user in order for the authorization to be synchronized: " + study
+			return;
         }
 
         // Only perform synchronization if needed. It is needed if:

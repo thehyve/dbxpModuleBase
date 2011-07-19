@@ -79,14 +79,18 @@ class GscfService implements Serializable {
 	/**
 	 * Returns the URL to let the user login at GSCF
 	 *
-	 * @param params Parameters of the action called
-	 * @param token Session token
+	 * @param params 			Parameters of the action called
+	 * @param token				Session token
 	 * @param appendParameters	Boolean to set whether request parameters should be added to the URL. 
 	 * 							If set to true with a POST request, an exception will occur
 	 * @return URL to redirect the user to
 	 */
 	public String urlAuthRemote(params, token, appendParameters = true) {
-		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/login/auth_remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token&"
+		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/login/auth_remote?moduleURL=${moduleURL()}&"
+		
+		if( token )
+			redirectURL += "consumer=${consumerID()}&token=$token&"
+			
 		def returnUrl = paramsMapToURL( params, appendParameters );
 
 		redirectURL + 'returnUrl=' + returnUrl.encodeAsURL()
@@ -104,8 +108,11 @@ class GscfService implements Serializable {
 	 * @return URL to redirect the user to
 	 */
 	public String urlLogoutRemote(params, token, appendReturnUrl = false, appendParameters = true ) {
-		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/logout/remote?moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$token"
-		
+		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/logout/remote?moduleURL=${moduleURL()}&"
+
+		if( token )
+			redirectURL += "consumer=${consumerID()}&token=$token&"
+
 		if( appendReturnUrl ) {
 			def returnUrl = paramsMapToURL( params, appendParameters );
 
@@ -120,11 +127,12 @@ class GscfService implements Serializable {
 	 * Transform generic exceptions from callGSCF to exceptions with a bit more
 	 * context to simplify the life of system administrators.
 	 *
+	 * @param sessionToken	Session token used for synchronization
 	 * @param className String Name of the class (e.g. 'study' or 'assay')
 	 * @param token String Token used for callGSCF
 	 * @param e Exception The exception that was thrown
 	 */
-	void handleGSCFExceptions(className, token, Throwable e) {
+	void handleGSCFExceptions(sessionToken, className, token, Throwable e) {
 
 		def tokenString = 'token'
 		def instanceString = 'instance'
@@ -134,9 +142,16 @@ class GscfService implements Serializable {
 		}
 
 		switch (e.class) {
+			case NotAuthenticatedException:
+				// If a NotAuthenticatedException occurs, GSCF is not ready yet for
+				// returning public studies
+				if( !sessionToken ) {
+					throw new NotAuthenticatedException( "We have tried to synchronize data without a sessiontoken. This is only supported by GSCF versions > 0.8.5 (r1968). Update your GSCF version or disable synchronization." );
+				} else {
+					throw e;
+				}
 			case NotAuthorizedException:
 				throw new NotAuthorizedException("User is not authorized to access $className with $tokenString: $token")
-				break
 			case ResourceNotFoundException:
 				throw new ResourceNotFoundException("No $instanceString of $className with $tokenString: $token found in GSCF")
 			default:
@@ -153,6 +168,10 @@ class GscfService implements Serializable {
 	 * @return boolean    True if the user is authenticated with GSCF, false otherwise
 	 */
 	boolean isUserLoggedIn(String sessionToken) {
+		// Without session token, the user is never logged in
+		if( !sessionToken )
+			return false;
+			
 		try {
 			callGSCF(sessionToken, "isUser")[0]['authenticated'] as boolean
 		} catch (Exception e) {
@@ -181,7 +200,7 @@ class GscfService implements Serializable {
 
 		} catch (Exception e) {
 			e.printStackTrace()
-			[:]
+			return [:]
 		}
 	}
 
@@ -193,7 +212,12 @@ class GscfService implements Serializable {
 	 * @return ArrayList
 	 */
 	ArrayList getStudies(String sessionToken) {
-		callGSCF(sessionToken, "getStudies")
+		try { 
+			return callGSCF(sessionToken, "getStudies")
+		} catch( e ) {
+			handleGSCFExceptions(sessionToken, 'studies', [], e)
+			return []
+		}
 	}
 
 	/**
@@ -208,8 +232,8 @@ class GscfService implements Serializable {
 		try {
 			callGSCF(sessionToken, "getStudies", ["studyToken": studyTokens])
 		} catch (e) {
-			handleGSCFExceptions('studies', studyTokens, e)
-			[]
+			handleGSCFExceptions(sessionToken, 'studies', studyTokens, e)
+			return []
 		}
 	}
 
@@ -222,7 +246,12 @@ class GscfService implements Serializable {
 	 * @return HashMap
 	 */
 	HashMap getStudy(String sessionToken, String studyToken) {
-		getStudies(sessionToken, [studyToken])?.getAt(0)
+		try {
+			getStudies(sessionToken, [studyToken])?.getAt(0)
+		} catch( e ) {
+			handleGSCFExceptions(sessionToken, 'studies', studyTokens, e)
+			return []
+		}
 	}
 
 	/**
@@ -237,8 +266,8 @@ class GscfService implements Serializable {
 		try {
 			callGSCF(sessionToken, "getAssays", ["studyToken": studyToken])
 		} catch (e) {
-			handleGSCFExceptions('study', studyToken, e)
-			[]
+			handleGSCFExceptions( sessionToken, 'study', studyToken, e)
+			return []
 		}
 	}
 
@@ -256,8 +285,8 @@ class GscfService implements Serializable {
 			callGSCF(sessionToken, "getAssays", ["studyToken": studyToken, 'assayToken': assayTokens])
 		} catch (e) {
 			// TODO: how to detect whether study or assay could not be found?
-			handleGSCFExceptions('study', studyToken, e)
-			[]
+			handleGSCFExceptions(sessionToken, 'study', studyToken, e)
+			return []
 		}
 	}
 
@@ -271,7 +300,12 @@ class GscfService implements Serializable {
 	 * @return HashMap
 	 */
 	HashMap getAssay(String sessionToken, String studyToken, String assayToken) {
-		getAssays(sessionToken, studyToken, [assayToken])?.getAt(0) as HashMap
+		try {
+			getAssays(sessionToken, studyToken, [assayToken])?.getAt(0) as HashMap
+		} catch(e) {
+			handleGSCFExceptions(sessionToken, 'assay', assayToken, e)
+			return []
+		}
 	}
 
 	/**
@@ -286,7 +320,7 @@ class GscfService implements Serializable {
 		try {
 			callGSCF(sessionToken, "getSamples", ["assayToken": assayToken])
 		} catch (e) {
-			handleGSCFExceptions('assay', assayToken, e)
+			handleGSCFExceptions( sessionToken, 'assay', assayToken, e)
 			[]
 		}
 	}
@@ -303,7 +337,7 @@ class GscfService implements Serializable {
 		try {
 			callGSCF(sessionToken, "getSamples", ["sampleToken": sampleTokens])
 		} catch (e) {
-			handleGSCFExceptions('sample', sampleTokens, e)
+			handleGSCFExceptions( sessionToken, 'sample', sampleTokens, e)
 		}
 	}
 
@@ -317,7 +351,11 @@ class GscfService implements Serializable {
 	 * @return HashMap
 	 */
 	HashMap getSample(String sessionToken, String assayToken, String sampleToken) {
-		getSamples(sessionToken, [sampleToken])?.getAt(0) as HashMap
+		try {
+			getSamples(sessionToken, [sampleToken])?.getAt(0) as HashMap
+		} catch( e ) {
+			handleGSCFExceptions( sessionToken, 'sample', sampleToken, e)
+		}
 	}
 
 	/**
@@ -330,8 +368,14 @@ class GscfService implements Serializable {
 	 */
 	def getAuthorizationLevel(String sessionToken, String studyToken) {
 		def mapResult = [:]
-		def result = callGSCF(sessionToken, "getAuthorizationLevel", ["studyToken": studyToken])[0]
-
+		def result
+		
+		try {
+			result = callGSCF(sessionToken, "getAuthorizationLevel", ["studyToken": studyToken])[0]
+		} catch( e ) {
+			handleGSCFExceptions( sessionToken, "study", studyToken, e )
+		}
+		
 		result.each {
 			mapResult[ it.key ] = it.value
 		}
@@ -352,7 +396,11 @@ class GscfService implements Serializable {
 
 		// Retrieve the version number from GSCF
 		// If an exception occurs, just throw it, it should be handled in the calling method
-		result = callGSCF(sessionToken, "getStudyVersion", ["studyToken": studyToken])[0]
+		try {
+			result = callGSCF(sessionToken, "getStudyVersion", ["studyToken": studyToken])[0]
+		} catch( e ) {
+			handleGSCFExceptions( sessionToken, "study", studyToken, e )
+		}
 
 		// Determine the version number from the system
 		for( element in result ) {
@@ -373,7 +421,11 @@ class GscfService implements Serializable {
 	def getStudyVersions(String sessionToken) {
 		// Retrieve the version number from GSCF
 		// If an exception occurs, just throw it, it should be handled in the calling method
-		callGSCF(sessionToken, "getStudyVersions")
+		try {
+			return callGSCF(sessionToken, "getStudyVersions")
+		} catch( e ) {
+			handleGSCFExceptions( sessionToken, "", "", e )
+		}
 	}
 
 	/**
@@ -389,8 +441,12 @@ class GscfService implements Serializable {
 	ArrayList callGSCF(String sessionToken, String restMethod, HashMap restParams = [:], String requestMethod = "GET") {
 
 		// Create a string of arguments to send to GSCF
-		def args = "moduleURL=${moduleURL()}&consumer=${consumerID()}&token=$sessionToken&" +
-				paramsMapToURLRequestString(restParams)
+		def args = "moduleURL=${moduleURL()}&" 
+		
+		if( sessionToken )
+			args += "consumer=${consumerID()}&token=$sessionToken&"
+		
+		args +=	paramsMapToURLRequestString(restParams)
 
 		// construct GSCF address
 		def addr = "${restURL()}/${restMethod}"
@@ -448,7 +504,7 @@ class GscfService implements Serializable {
 				throw new NotAuthorizedException("User is not authorized to access the resource: $addr")
 				break
 			case 403:    // Incorrect authentication
-			// The user is logged in to the module, but not to GSCF. We log the user out of the module
+				// The user is logged in to the module, but not to GSCF. We log the user out of the module
 				RequestContextHolder.currentRequestAttributes().session.user = null
 
 				throw new NotAuthenticatedException("User is not authenticated with GSCF. Requested URL: $addr")
