@@ -128,6 +128,9 @@ function initializePagination( selector ) {
 			// Override the fnServerData in order to show/hide the paginated
 			// buttons if data is loaded
 			"fnServerData": function ( sSource, aoData, fnCallback ) {
+                if(selectType[ id ] != "selectNone") {
+                    aoData = removeColumnInParam(aoData);
+                }
 				$.ajax( {
 					"dataType": 'json', 
 					"type": "POST", 
@@ -155,6 +158,37 @@ function initializePagination( selector ) {
 
 	// Show hide paginated buttons
 	showHidePaginatedButtons( selector );
+}
+
+function removeColumnInParam( aoData ) {
+    var arrParam = new Array("bSearchable_","sSearch_","bRegex_","bSortable_","mDataProp_");
+
+    for(var i = 0; i < aoData.length; i++ ) {
+        var key = aoData[i].name;
+        for(var j = 0; j < arrParam.length; j++ ) {
+            if(key.indexOf(arrParam[j]) != -1) {
+                var iNum = parseInt(key.replace(arrParam[j],""));
+                if(iNum==0) {
+                    aoData[i].name = "aa";
+                } else {
+                    iNum = iNum -1;
+                    aoData[i].name = arrParam[j]+iNum;
+                }
+                break;
+            }
+        }
+        if(key.indexOf("iSortCol_0") != -1) {
+            var iNum = parseInt(aoData[i].value);
+            if(iNum>0) {
+                aoData[i].value = iNum-1;
+            }
+        }
+        if(key.indexOf("iColumns") != -1) {
+            var iNum = parseInt(aoData[i].value);
+            aoData[i].value = iNum-1;
+        }
+    }
+    return aoData;
 }
 
 function initializeSelect( selector ) {
