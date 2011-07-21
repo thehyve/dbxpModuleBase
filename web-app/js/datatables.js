@@ -88,7 +88,7 @@ function initializePagination( selector ) {
 
         numElements[ id ] = 0;
         allElements[ id ] = new Array();
-        $("#"+id+"_info").after("<span id='"+id+"_selectinfo'></span>");
+        $("#"+id+"_info").after("<span id='"+id+"_selectinfo' class='selectinfo'></span>");
 	});
 
 	// Initialize serverside pagination
@@ -153,7 +153,7 @@ function initializePagination( selector ) {
 			}			
 		});
 
-        $("#"+id+"_info").after("<span id='"+id+"_selectinfo'></span>");
+        $("#"+id+"_info").after("<span id='"+id+"_selectinfo' class='selectinfo'></span>");
 	});
 
 	// Show hide paginated buttons
@@ -349,9 +349,21 @@ function updateCheckAll( input ) {
     var paginatedTable = $(input).closest( '.datatables' );
     var inputsOnScreen = $( 'tbody input[type=checkbox]', paginatedTable );
 
+    var tableId = paginatedTable.attr( 'id' );
+    var checkAll = $( '#'+tableId+'_checkAll', paginatedTable );
+    
     var blnSelected = false;
     var blnAllSelected = true;
 
+    // If the list is empty, disable the checkall and remove the check
+    if( inputsOnScreen.length == 0 ) {
+    	checkAll.attr( 'checked', false );
+    	checkAll.attr( 'disabled', true );
+    	return;
+    } else {
+    	checkAll.attr( 'disabled', false );
+    }
+    
     for( var i = 0; i < inputsOnScreen.length; i++ ) {
         var input = $(inputsOnScreen[ i ] );
         if( input.attr( 'id' ) != "checkAll" ) {
@@ -362,9 +374,6 @@ function updateCheckAll( input ) {
             }
         }
     }
-
-    var tableId = paginatedTable.attr( 'id' );
-    var checkAll = $( '#'+tableId+'_checkAll', paginatedTable );
 
     checkAll.removeClass( 'transparent' );
     if(blnAllSelected) {
@@ -386,26 +395,35 @@ function updateCheckAll( input ) {
 
 function checkSelectedCheckboxes( tableId ) {
 
+	// Add a selectbox or radiobutton to each row
 	var trsOnScreen = $( 'tbody tr', $("#"+tableId) );
 
 	for( var i = 0; i < trsOnScreen.length; i++ ) {
 		var tr = $(trsOnScreen[ i ] );
         var td = $( 'td:first',tr);
-
-        var rowid = td.html().trim();
-
-        var strChecked = "";
-        if( jQuery.inArray( parseInt( rowid ), elementsSelected[ tableId ] ) > -1 ) {
-            strChecked = " CHECKED ";
+        
+        // Only add the input if the list is not empty. The list is empty if
+        // the td we've selected has the class dataTables_empty
+        if( !td.hasClass( 'dataTables_empty' ) ) {
+	        var rowid = td.html().trim();
+	
+	        // Determine whether the field should be checked
+	        var strChecked = "";
+	        if( jQuery.inArray( parseInt( rowid ), elementsSelected[ tableId ] ) > -1 ) {
+	            strChecked = " CHECKED ";
+	        }
+	
+	        // Add a radio button for selectOnce and a checkbox for selectMulti
+	        var strType = "radio";
+	        if(selectType[ tableId ] == "selectMulti") {
+	            strType = "checkbox";
+	        }
+	        
+	        // Replace the current contents of the cell with the newly created input field
+	        td.html("<input id='"+tableId+"_ids' type='"+strType+"' onclick='clickRow(this);' value='"+rowid+"' name='"+tableId+"_ids'"+strChecked+">");
         }
-
-        var strType = "radio";
-        if(selectType[ tableId ] == "selectMulti") {
-            strType = "checkbox";
-        }
-        td.html("<input id='"+tableId+"_ids' type='"+strType+"' onclick='clickRow(this);' value='"+rowid+"' name='"+tableId+"_ids'"+strChecked+">");
-
     }
+	
     updateCheckAll( trsOnScreen.parent() );
 
 }
