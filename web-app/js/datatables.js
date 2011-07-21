@@ -64,26 +64,7 @@ function initializePagination( selector ) {
         var id = $el.attr( 'id' );
         elementsSelected[ id ] = new Array();
 
-        if($el.hasClass( 'selectMulti' )) {
-            selectType[ $el.attr( 'id' ) ] = "selectMulti";
-            $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'><input id='"+id+"_checkAll' class='' type='checkbox' onClick='clickCheckAll(this);'></th>");
-            $("#"+ id + ' tbody tr').each(function(idxrow, row) {
-                rowid = $(row).attr('id');
-                rowid = rowid.replace("rowid_","");
-                $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='checkbox' onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
-            });
-
-        } else if($el.hasClass( 'selectOne' )) {
-            selectType[ $el.attr( 'id' ) ] = "selectOne";
-            $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'></th>");
-            $("#"+ id + ' tbody tr').each(function(idxrow, row) {
-                rowid = $(row).attr('id');
-                rowid = rowid.replace("rowid_","");
-                $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='radio'  onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
-            });
-        } else {
-            selectType[ $el.attr( 'id' ) ] = "selectNone";
-        }
+        initializeSelect(el);
 
         $el.dataTable({
 			bJQueryUI: true, 
@@ -121,6 +102,8 @@ function initializePagination( selector ) {
 		tableType[ id ] = "serverside";
 		elementsSelected[ id ] = new Array();
 
+        initializeSelect(el);
+
 		$el.dataTable({ 
 			"bProcessing": true,
 			"bServerSide": true,
@@ -141,7 +124,7 @@ function initializePagination( selector ) {
 				{ "bSortable": false, "aTargets": ["nonsortable"] },				// Disable sorting on all columns with th.nonsortable
 				{ "sSortDataType": "formatted-num", "aTargets": ["formatted-num"] }	// Make sorting possible on formatted numbers
 			],
-			
+           			
 			// Override the fnServerData in order to show/hide the paginated
 			// buttons if data is loaded
 			"fnServerData": function ( sSource, aoData, fnCallback ) {
@@ -159,7 +142,9 @@ function initializePagination( selector ) {
 						allElements[ id ] = data[ "aIds" ];
 						
 						// Find which checkboxes are selected
-						checkSelectedCheckboxes( $el.parent() );
+                        if(selectType[ id ] != "selectNone") {
+						    checkSelectedCheckboxes( id );
+                        }
 					}
 				} );
 			}			
@@ -170,6 +155,43 @@ function initializePagination( selector ) {
 
 	// Show hide paginated buttons
 	showHidePaginatedButtons( selector );
+}
+
+function initializeSelect( selector ) {
+
+    var $el = $(selector);
+
+    var id = $el.attr( 'id' );
+
+    if($el.hasClass( 'selectMulti' )) {
+        selectType[ id ] = "selectMulti";
+        $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'><input id='"+id+"_checkAll' class='' type='checkbox' onClick='clickCheckAll(this);'></th>");
+        $("#"+ id + ' tbody tr').each(function(idxrow, row) {
+            if($(row).attr('id') == null) {
+                alert("No [id] in the tbody:tr found. Each row needs an unique id that is passed as value of the checkbox. Please report this error to your system administrator.");
+                rowid = -1;
+            } else {
+                rowid = $(row).attr('id');
+                rowid = rowid.replace("rowid_","");
+            }
+            $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='checkbox' onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
+        });
+    } else if($el.hasClass( 'selectOne' )) {
+        selectType[ id ] = "selectOne";
+        $("#"+ id + ' thead tr').prepend("<th class='selectColumn nonsortable'></th>");
+        $("#"+ id + ' tbody tr').each(function(idxrow, row) {
+            if($(row).attr('id') == null) {
+                alert("No [id] in the tbody:tr found. Each row needs an unique id that is passed as value of the radio. Please report this error to your system administrator.");
+                rowid = -1;
+            } else {
+                rowid = $(row).attr('id');
+                rowid = rowid.replace("rowid_","");
+            }
+            $(row).prepend("<td class='selectColumn'><input id='"+id+"_ids' type='radio'  onclick='clickRow(this);' value='"+rowid+"' name='"+id+"_ids'></td>");
+        });
+    } else {
+        selectType[ id ] = "selectNone";
+    }
 }
 
 function showHidePaginatedButtons( selector ) {
@@ -320,24 +342,38 @@ function updateCheckAll( input ) {
         checkAll.attr('checked', blnSelected);
     }
 
-    $("#"+tableId+"_selectinfo").html(" ("+elementsSelected[ tableId ].length+" selected)");
+    if(elementsSelected[ tableId ].length > 0) {
+        $("#"+tableId+"_selectinfo").html(" ("+elementsSelected[ tableId ].length+" selected)");
+    } else {
+        $("#"+tableId+"_selectinfo").html("");
+    }
+
 }
 
-function checkSelectedCheckboxes( wrapper ) {
-	var inputsOnScreen = $( 'tbody input[type=checkbox]', $(wrapper) );
-	var tableId = $( ".datatables", $(wrapper) ).attr( 'id' );
+function checkSelectedCheckboxes( tableId ) {
 
-	for( var i = 0; i < inputsOnScreen.length; i++ ) {
-		var input = $(inputsOnScreen[ i ] );
-		if( input.attr( 'id' ) != "checkAll" ) {
-			if( jQuery.inArray( parseInt( input.val() ), elementsSelected[ tableId ] ) > -1 ) {
-				input.attr( 'checked', true );
-			} else {
-				input.attr( 'checked', false );
-			}
-		}
-	}
-    updateCheckAll( wrapper );
+	var trsOnScreen = $( 'tbody tr', $("#"+tableId) );
+
+	for( var i = 0; i < trsOnScreen.length; i++ ) {
+		var tr = $(trsOnScreen[ i ] );
+        var td = $( 'td:first',tr);
+
+        var rowid = td.html().trim();
+
+        var strChecked = "";
+        if( jQuery.inArray( parseInt( rowid ), elementsSelected[ tableId ] ) > -1 ) {
+            strChecked = " CHECKED ";
+        }
+
+        var strType = "radio";
+        if(selectType[ tableId ] == "selectMulti") {
+            strType = "checkbox";
+        }
+        td.html("<input id='"+tableId+"_ids' type='"+strType+"' onclick='clickRow(this);' value='"+rowid+"' name='"+tableId+"_ids'"+strChecked+">");
+
+    }
+    updateCheckAll( trsOnScreen.parent() );
+
 }
 
 function submitPaginatedForm( id, url, nothingInFormMessage ) {
