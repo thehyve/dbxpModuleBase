@@ -101,8 +101,10 @@ class SynchronizationService {
 				def domainClass = determineClassFor( "Study" );
 				
 				log.trace "  Not found locally. Creating an object: " + domainClass;
-	            
-				localStudy = domainClass.newInstance(studyToken: gscfStudy.studyToken, gscfVersion: gscfStudy.version, isDirty: true, isPublic: gscfStudy.published && gscfStudy[ 'public' ] )
+				
+				localStudy = domainClass.newInstance();
+				localStudy.setPropertiesFromGscfJson( gscfStudy );
+				localStudy.isDirty = true;
 			} else if( gscfVersion != localStudy.gscfVersion ){
 				log.trace "  Mark existing study dirty"
 				// Mark existing study dirty if the versions don't match 
@@ -229,7 +231,9 @@ class SynchronizationService {
 
                     // If it doesn't exist, create a new object
 					def domainClass = determineClassFor( "Study" );
-                    studyFound = domainClass.newInstance(studyToken: gscfStudy.studyToken, name: gscfStudy.title, gscfVersion: gscfStudy.version, isDirty: true, isPublic: gscfStudy.published && gscfStudy[ 'public' ])
+                    studyFound = domainClass.newInstance();
+					studyFound.setPropertiesFromGscfJson( gscfStudy );
+					studyFound.isDirty = true
                     studyFound.save()
 
                     // Synchronize authorization and study assays (since the study itself is already synchronized)
@@ -354,10 +358,8 @@ class SynchronizationService {
             synchronizeStudyAssays(study)
 
         // Update properties and mark as clean
-        study.name = newStudy.title
-		study.gscfVersion = newStudy.version
+		study.setPropertiesFromGscfJson( newStudy );
         study.isDirty = false
-		study.isPublic = publicStudy
         study.save(flush: true)
 
         return study
@@ -430,7 +432,9 @@ class SynchronizationService {
 
                     // If it doesn't exist, create a new object
 					def domainClass = determineClassFor( "Assay" );
-                    assayFound = domainClass.newInstance(assayToken: gscfAssay.assayToken, name: gscfAssay.name, study: study)
+                    assayFound = domainClass.newInstance();
+					assayFound.study = study;
+					assayFound.setPropertiesFromGscfJson( gscfAssay );
 
                     log.trace("Connecting assay to study")
                     study.addToAssays(assayFound)
@@ -617,10 +621,10 @@ class SynchronizationService {
         }
 
         log.trace("Assay is found in GSCF: " + assay.name + " / " + newAssay)
-        if (newAssay?.name) {
-            assay.name = newAssay.name
-            assay.save()
-        }
+		if( assay.isDifferentFromGscfJson( newAssay ) ) {
+			assay.setPropertiesFromGscfJson( newAssay );
+	        assay.save()
+		}
 
         // Synchronize samples
         synchronizeAssaySamples(assay)
@@ -681,44 +685,30 @@ class SynchronizationService {
         newSamples.each { gscfSample ->
             log.trace("Processing GSCF sample " + gscfSample.sampleToken + ": " + gscfSample)
             if (gscfSample.name) {
-
+				
                 Sample sampleFound = assay.samples.find { it.sampleToken == gscfSample.sampleToken }
 
                 if (sampleFound) {
 					log.trace "Sample " + sampleFound.token() + " already found in database.";
-                    setSubjectAndEventFromGSCF(sampleFound, gscfSample)
-                    sampleFound.save()
+					if( sampleFound.isDifferentFromGscfJson( gscfSample ) ) {
+						sampleFound.setPropertiesFromGscfJson( gscfSample );
+						sampleFound.save()
+					}
                 } else {
                     log.trace("Sample " + gscfSample.sampleToken + " not found in database. Creating a new object.")
 
                     // If it doesn't exist, create a new object. First determine the class to use
 					def domainClass = determineClassFor( "Sample" );
 					sampleFound = domainClass.newInstance()
-                    sampleFound.sampleToken = gscfSample.sampleToken
-                    sampleFound.name        = gscfSample.name
-
-                    setSubjectAndEventFromGSCF(sampleFound, gscfSample)
+					sampleFound.setPropertiesFromGscfJson( gscfSample );
                     assay.addToSamples(sampleFound)
+					
                     if (!sampleFound.save()) {
                         log.error("Error while connecting sample to assay: " + sampleFound.errors)
                     }
                 }
             }
         }
-    }
-
-    /**
-     * Copies the subject and event properties from the gscf sample to the local sample
-     * @param sample Sample object to update
-     * @param gscfSample Map with properties about the gscf sample ('subject', 'event' and 'startTime' are used)
-     */
-    private void setSubjectAndEventFromGSCF(sample, gscfSample) {
-        sample.subject = gscfSample.subject && gscfSample.subject != "null" ? gscfSample.subject.toString() : ""
-
-        sample.event = gscfSample.event && gscfSample.event != "null" ? gscfSample.event.toString() : ""
-
-        if (gscfSample.startTime && gscfSample.startTime != "null")
-            sample.event += " (" + gscfSample.startTime + ")"
     }
 
     /**

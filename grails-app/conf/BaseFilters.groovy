@@ -169,11 +169,17 @@ class BaseFilters {
 	
 	protected boolean isAuthenticationRequired( def grailsApplication, String controllerName, String actionName ) {
 		// Check the configuration for authentication requirement
+		// Defaults to true (because we use getMandatory)
+		// This method is able to handle: "true", "false", true, false and 
 		// Default (when value == null) to 'true'
-		boolean configurationAuthenticationRequired =
-			ConfigurationHolder.config.module.defaultAuthenticationRequired == null ||
-			ConfigurationHolder.config.module.defaultAuthenticationRequired
-		
+		boolean configurationAuthenticationRequired = true
+		try {
+			configurationAuthenticationRequired = ConfigurationHolder.config.module.getMandatory( 'defaultAuthenticationRequired' ) as Boolean;
+		} catch( Exception e ) {
+			// An exception occurs if the configuration option is not set. We can ignore it, since the value is set
+			// to true by default
+		}
+		 
 		// If no controllerName is given, return configuration value
 		if( !controllerName )
 			return configurationAuthenticationRequired

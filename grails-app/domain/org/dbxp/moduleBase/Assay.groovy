@@ -48,6 +48,24 @@ class Assay implements Serializable {
 	   }
    }
    
+   /**
+   * Sets the properties of this object, based on the JSON object given by GSCF
+   * @param jsonObject	Object with assay data from GSCF
+   */
+  public void setPropertiesFromGscfJson( jsonObject ) {
+	  this.assayToken = jsonObject.assayToken
+	  this.name = jsonObject.name
+  }
+
+  /**
+   * Determines whether the current object is different from the given JSON object
+   * @param jsonObject	Object with assay data from GSCF
+   * @return true if this object is different and needs updating
+   */
+  public boolean isDifferentFromGscfJson( jsonObject ) {
+	  return this.name != jsonObject.name || this.assayToken != jsonObject.assayToken;
+  }
+   
    
    /**
 	* Returns all assays this user can read

@@ -9,28 +9,28 @@ import java.io.Serializable;
  */
 class Study implements Serializable {
 	def gscfService
-	
+
 	String studyToken
 	String name
 
 	// If a study is set to be public, everyone can read it
 	// Notice: this implementation differs from the one in GSCF
-	// because this study is set to isPublic only 
+	// because this study is set to isPublic only
 	// if gscfStudy is public & published
 	Boolean isPublic = false;
-	
+
 	// If a study is set to be dirty, it should be updated
 	// the next time synchronization takes place.
 	Boolean isDirty = true;
-	
+
 	// Version number that corresponds with the GSCF version. Is used
 	// to determine whether this study object is out of sync
 	Integer gscfVersion = 0;
-	
+
 	public String viewUrl() {
 		return gscfService.urlViewStudy( studyToken );
 	}
-	
+
 	static hasMany = [assays: Assay, auth: Auth]
 	static mapping = {
 		columns {
@@ -51,7 +51,7 @@ class Study implements Serializable {
 	public boolean equals( Object o ) {
 		if( o == null )
 			return false
-		
+
 		if( o instanceof Study ) {
 			return (o.id != null && this.id != null && o.id == this.id);
 		} else {
@@ -61,31 +61,31 @@ class Study implements Serializable {
 
 	public boolean canRead( User user ) {
 		Auth authorization = auth.find { it.user.equals( user ) }
-		
-		if( !authorization ) 
+
+		if( !authorization )
 			return false
-		
+
 		return authorization.canRead
 	}
-	
+
 	public boolean canWrite( User user ) {
 		Auth authorization = auth.find { it.user.equals( user ) }
-		
-		if( !authorization ) 
+
+		if( !authorization )
 			return false
-		
+
 		return authorization.canWrite
 	}
 
 	public boolean isOwner( User user ) {
 		Auth authorization = auth.find { it.user.equals( user ) }
-		
-		if( !authorization ) 
+
+		if( !authorization )
 			return false
-		
+
 		return authorization.isOwner
 	}
-	
+
 	public String token() { return studyToken; }
 	public String toString() { return "Study " + id + ": " + ( name ?: "" ) }
 
@@ -93,7 +93,7 @@ class Study implements Serializable {
 		def auth = [] + Auth.findAllByStudy( this );
 		auth.each { it.delete( flush: true ) }
 	}
-	
+
 	/**
 	 * Convenience method to check whether this object should be synchronized with GSCF
 	 * @return	true if the study version in GSCF is different from this object
@@ -102,16 +102,16 @@ class Study implements Serializable {
 		// Always synchronize if object is dirty
 		if ( isDirty )
 			return true;
-		
+
 		// Warn if no sessiontoken is given
 		if( !sessionToken ) {
 			log.warn "No sessiontoken given for study version check. No check performed"
 			return false;
 		}
-		
+
 		try {
 			def versionNumber = gscfService.getStudyVersion( sessionToken, studyToken )
-			
+
 			return ( versionNumber != gscfVersion )
 		} catch( ResourceNotFoundException e ) {
 			// If the study is not found, it should be synchronized anyway to delete it from the module
@@ -122,41 +122,52 @@ class Study implements Serializable {
 			return false
 		}
 	}
-	
+
+	/**
+	 * Sets the properties of this object, based on the JSON object given by GSCF
+	 * @param jsonObject	Object with study data
+	 */
+	public void setPropertiesFromGscfJson( jsonObject ) {
+		this.studyToken = jsonObject.studyToken
+		this.name = jsonObject.title
+		this.gscfVersion = jsonObject.version
+		this.isPublic = jsonObject.published && jsonObject[ 'public' ]
+	}
+
 	/**
 	 * Returns all studies this user can read
 	 * @param user	User for which the studies should be returned
 	 * @return		List of study objects
 	 */
 	public static def giveReadableStudies( User user ) {
-		if( user ) 
+		if( user )
 			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canRead = true )", [ "user": user ] )
 		else
 			return Study.executeQuery( "SELECT DISTINCT s FROM Study s WHERE s.isPublic = true" )
 	}
-	
+
 	/**
-	* Returns all studies this user can write
-	* @param user	User for which the studies should be returned
-	* @return		List of study objects
-	*/
-   public static def giveWritableStudies( User user ) {
-	   if( user )
-		   return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canWrite = true )", [ "user": user ] )
-	   else
-		   return []
-   }
-   
-   
-   /**
-   * Returns all studies this user owns
-   * @param user	User for which the studies should be returned
-   * @return		List of study objects
-   */
-  public static def giveMyStudies( User user ) {
-	  if( user )
-		  return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.isOwner = true )", [ "user": user ] )
-	  else
-		  return []
-  }
+	 * Returns all studies this user can write
+	 * @param user	User for which the studies should be returned
+	 * @return		List of study objects
+	 */
+	public static def giveWritableStudies( User user ) {
+		if( user )
+			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canWrite = true )", [ "user": user ] )
+		else
+			return []
+	}
+
+
+	/**
+	 * Returns all studies this user owns
+	 * @param user	User for which the studies should be returned
+	 * @return		List of study objects
+	 */
+	public static def giveMyStudies( User user ) {
+		if( user )
+			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.isOwner = true )", [ "user": user ] )
+		else
+			return []
+	}
 }
