@@ -17,8 +17,6 @@ class Sample implements Serializable {
 		}
 	}
 	static constraints = {
-//		subject(nullable: true)
-//		event(nullable: true)
 	}
 
 	public String token() { return sampleToken; }
