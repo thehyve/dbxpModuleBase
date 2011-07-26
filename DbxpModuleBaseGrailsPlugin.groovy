@@ -1,6 +1,6 @@
 class DbxpModuleBaseGrailsPlugin {
     // the plugin version
-    def version = "0.1.6"
+    def version = "0.1.7"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3.7 > *"
     // the other plugins this plugin depends on
@@ -8,7 +8,8 @@ class DbxpModuleBaseGrailsPlugin {
 		jquery:"1.6.1.1 => *",
 		jqueryDatatables: "1.7.5 => *",
 		jqueryUi: "1.8.11 => *",
-		famfamfam: "1.0.1"
+		famfamfam: "1.0.1",
+		resources: "1.0 => *"
 	]
     // resources that are excluded from plugin packaging
     def pluginExcludes = [

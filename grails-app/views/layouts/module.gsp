@@ -35,39 +35,10 @@
 
 	You have to add the li's for the topnav list in between <content tag="topnav"> and </content>. You can also
 	add additional javascripts, css files or content to the page, just as you are used to.
-*/ %>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en-EN" xml:lang="en-EN">
-	<head>
-		<title><g:layoutTitle default="${ConfigurationHolder.config.module.name} | dbXP"/></title>
-		<link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico', plugin: 'dbxpModuleBase' )}" type="image/x-icon"/>
-		
-		<% /* Make sure the module javascript always knows their baseUrl */ %>
-		<script type="text/javascript">
-			var baseUrl = '${resource(dir: '')}';
-		</script>
 
-		<% /* Import stylesheets for basic look and feel */ %>
-		<link rel="stylesheet" href="${createLink( controller: 'css', action: 'module' )}" type="text/css"/>
-		
-		<% /* Import jquery, jquery UI and jquery DataTables */ %>
-		<g:javascript library="jquery" plugin="jquery" />
-		<jqui:resources theme="cupertino" themeCss="${resource(dir: 'css/cupertino', file: 'jquery-ui-1.8.13.custom.css', plugin: 'dbxpModuleBase' )}" />
-		<jqDT:resources jqueryUI="${true}" type="js" />
-		
-		<% /* Import datatables style sheet */ %>
-		<link rel="stylesheet" href="${resource(dir: 'css', file: 'datatables.css', plugin: 'dbxpModuleBase')}"/>
-					
-		<% /* Import javascript for top navigation */ %>
-		<script type="text/javascript" src="${resource(dir: 'js', file: 'topnav.js', plugin: 'dbxpModuleBase')}"></script>
+	How to use Datadatbles:
+		Use a 'paginate' class on a table to create a paginated table using datatables plugin.
 
-		<% /* 
-			Import javascripts and stylesheets for pagination and common buttons
-		
-			Usage:
-		
-			Use a 'paginate' class on a table to create a paginated table using datatables plugin.
-		
 				<table id='samples' class="paginate">
 					<thead>
 						<tr><th>Name</th><th># samples</th></tr>
@@ -77,30 +48,44 @@
 						<tr><td>Siemen</td><td>418</td></tr>
 					</tbody>
 				</table>
-		
-			will automatically create a paginated table, without any further actions. The pagination
-			buttons will only appear if there is more than 1 page.
-		
-			
-			Serverside tables:
-			
-			When you have a table with lots of rows, creating the HTML table can take a while. You can also 
-			create a table where the data for each page will be fetched from the server. This can be done using
-			  
+
+		will automatically create a paginated table, without any further actions. The pagination
+		buttons will only appear if there is more than 1 page.
+
+		Serverside tables:
+
+		When you have a table with lots of rows, creating the HTML table can take a while. You can also
+		create a table where the data for each page will be fetched from the server. This can be done using
+
 				<table id='samples' class="paginate serverside" rel="/url/to/ajaxData">
 					<thead>
 						<tr><th>Name</th><th># samples</th></tr>
 					</thead>
 				</table>
-			
-			Where the /url/to/ajaxData is a method that returns the proper data for this table. See 
-			http://www.datatables.net/examples/data_sources/server_side.html for more information about this method.		 
-				
-		*/ %>
-		<script type="text/javascript" src="${resource(dir: 'js', file: 'datatables.js', plugin: 'dbxpModuleBase')}"></script>
+
+		Where the /url/to/ajaxData is a method that returns the proper data for this table. See
+		http://www.datatables.net/examples/data_sources/server_side.html for more information about this method.
+*/ %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-EN" xml:lang="en-EN">
+	<head>
+		<title><g:layoutTitle default="${ConfigurationHolder.config.module.name} | dbXP"/></title>
+		<link rel="shortcut icon" href="${resource(dir: 'images', file: 'favicon.ico', plugin: 'dbxpModuleBase' )}" type="image/x-icon"/>
 		
+		<% /* require modules from the resources plugin */ %>
+		<r:require modules="moduleBase"/>
+
+		<% /* Make sure the module javascript always knows their baseUrl */ %>
+		<r:script>var baseUrl = '${resource(dir: '')}';</r:script>
+
+		<% /* Import stylesheets for basic look and feel */ %>
+		<link rel="stylesheet" href="${createLink( controller: 'css', action: 'module' )}" type="text/css"/>
+
+		<% /* render head of client views */ %>
 		<g:layoutHead/>
-	
+
+		<% /* include the layout resources that have to go in the head section */ %>
+		<r:layoutResources/>
 	</head>
 	<body>
 		<div id="header">
@@ -130,5 +115,7 @@
 				Copyright &copy; 2010 - <g:formatDate format="yyyy" date="${new Date()}"/>. All rights reserved.
 			</div>
 		</div>
+		<% /* include the layout resources that can go in the bottom part of the body section */ %>
+		<r:layoutResources/>
 	</body>
 </html>
