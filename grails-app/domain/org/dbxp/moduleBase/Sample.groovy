@@ -1,7 +1,5 @@
 package org.dbxp.moduleBase
 
-import java.io.Serializable;
-
 /**
  * Minimal representation of a sample. The sampleToken is the link with a sample object in GSCF.
  *
@@ -19,8 +17,8 @@ class Sample implements Serializable {
 		}
 	}
 	static constraints = {
-		subject(nullable: true)
-		event(nullable: true)
+//		subject(nullable: true)
+//		event(nullable: true)
 	}
 
 	public String token() { return sampleToken; }

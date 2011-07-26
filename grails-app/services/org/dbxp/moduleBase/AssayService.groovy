@@ -6,7 +6,6 @@ class AssayService {
 
     List getAssaysReadableByUser(User user) {
 
-        // TODO: is 'read' flag always enabled when 'write' or 'isOwner' is?
         def readEnabledAuthorizations = Auth.findAllByUserAndCanRead(user, true)
 
         readEnabledAuthorizations*.study.assays.flatten()
