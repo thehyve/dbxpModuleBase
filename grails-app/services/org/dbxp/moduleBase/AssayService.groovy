@@ -2,7 +2,7 @@ package org.dbxp.moduleBase
 
 class AssayService {
 
-    static transactional = true
+    static transactional = 'mongo'
 
     List getAssaysReadableByUser(User user) {
 
