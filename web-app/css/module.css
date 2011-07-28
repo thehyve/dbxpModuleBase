@@ -104,7 +104,7 @@ ul.topnav li span {
 	width: 17px;
 	height: 35px;
 	float: right;
-	background: url(${g.resource( dir: 'images/topnav', file: 'subnav_btn.gif' )}) no-repeat right top;
+	background: url(../images/topnav/subnav_btn.gif) no-repeat right top;
 }
 
 ul.topnav li span.subhover {
@@ -153,7 +153,7 @@ html ul.topnav li ul.subnav li a:hover {
 	background-color: white;
 }
 
-ul.topnav li.user_info { float: right; padding: 10px 5px 10px 20px; background: transparent url(${fam.icon( name: 'user' )}) center left no-repeat; }
+ul.topnav li.user_info { float: right; padding: 10px 5px 10px 20px; background: transparent none center left no-repeat; }
 ul.topnav li.user_info:hover { background-color: transparent; }
 ul.topnav li.user_info a { background-image: none; float: none; display: inline; text-decoration: underline; padding: 0; margin: 0; }
 
@@ -190,7 +190,7 @@ ul.topnav li.user_info a { background-image: none; float: none; display: inline;
 	margin-bottom: 10px;
 	margin-top: 10px;
 
-	background: #f7f7f7 url(${fam.icon( name: 'user' )}) 10px 10px no-repeat;
+	background: #f7f7f7 none 10px 10px no-repeat; /* Specific icon is defined in module.gsp layout */
 	padding: 10px 10px 10px 33px;
 }
 
@@ -199,7 +199,7 @@ ul.topnav li.user_info a { background-image: none; float: none; display: inline;
 	margin-bottom: 10px;
 	margin-top: 10px;
 
-	background: #FAE6E6 url(${fam.icon( name: 'information' )}) 10px 10px no-repeat;
+	background: #FAE6E6 none 10px 10px no-repeat;	/* Specific icon is defined in module.gsp layout */
 	padding: 10px 10px 10px 33px;
 }
 
@@ -249,7 +249,7 @@ td, th {
 }
 
 th {
-	background: #fff url(${g.resource( dir: 'images/tables', file: 'shadow.jpg')});
+	background: #fff url(../images/tables/shadow.jpg);
 	color: #666;
 	font-size: 11px;
 	font-weight: bold;
@@ -271,11 +271,11 @@ th.asc a, th.desc a {
 }
 
 th.asc a {
-	background-image: url(${g.resource( dir: 'images/tables', file: 'sorted_asc.gif')});
+	background-image: url(../images/tables/sorted_asc.gif);
 }
 
 th.desc a {
-	background-image: url(${g.resource( dir: 'images/tables', file: 'sorted_desc.gif')});
+	background-image: url(../images/tables/sorted_desc.gif);
 }
 
 .odd {
@@ -347,50 +347,7 @@ td.buttons input {
 
 .buttons a.disabled { color: #aaa; cursor: default; }
 
-.buttons .view, .buttons .show {
-	background-image:  url(${fam.icon( name: 'magnifier')});
-}
-.buttons .add, .buttons .create {
-	background-image: url(${fam.icon( name: 'add')});
-}
-.buttons .edit {
-	background-image:  url(${fam.icon( name: 'pencil')});
-}
-.buttons .delete, .buttons .remove {
-	background-image: url(${fam.icon( name: 'delete')});
-}
-
-.buttons .back {
-	background-image: url(${fam.icon( name: 'arrow_left' )});
-}
-.buttons .save {
-	background-image:  url(${fam.icon( name: 'accept' )});
-}
-.buttons .cancel {
-	background-image:  url(${fam.icon( name: 'arrow_left')});
-}
-
-.buttons .list, .buttons .backToList {
-	background-image: url(${fam.icon( name: 'application')});
-}
-.buttons .otherList {
-	background-image: url(${fam.icon( name: 'application_view_detail')});
-}
-
-.buttons .addAssociation {
-	background-image:  url(${fam.icon( name: 'application_add')});
-}
-.buttons .editAssociation {
-	background-image:  url(${fam.icon( name: 'application_edit')});
-}
-.buttons .removeAssociation,
-.buttons .deleteAssociation {
-	background-image:  url(${fam.icon( name: 'application_delete')});
-}
-
-.buttons .excel {
-	background-image: url(${fam.icon( name: 'page_excel')});
-}
+/* Specific button icons are defined within module.gsp layout */
 
 /* Hides the default navigation bar that is added by the Grails scaffolding */
 .nav { display: none; }
@@ -456,8 +413,9 @@ td.buttons input {
 /* END :: ontology autocomplete */
 
 /* START :: special select option styles */
+/* NB: the specific icons that should be shown are defined in module.gsp layout */
 option.addMore {
-	background: url(${fam.icon( name: 'add' )}) no-repeat left top;
+	background: none no-repeat left top;
 	background-color: #333;
 	padding-left: 18px;
 	height: 16px;
@@ -466,7 +424,7 @@ option.addMore {
 }
 
 option.modify {
-	background: url(${fam.icon( name: 'modify' )}) no-repeat left top;
+	background: none no-repeat left top;
 	background-color: #333;
 	padding-left: 18px;
 	height: 16px;
@@ -475,7 +433,7 @@ option.modify {
 }
 
 option.locked {
-	background: url(${fam.icon( name: 'lock' )}) no-repeat left top;
+	background: none no-repeat left top;
 	padding-left: 18px;
 }
 
@@ -486,7 +444,7 @@ option.unlocked {
 /* END :: special select option styles */
 
 .spinner {
-    background: url(${g.resource( dir: 'images', file: 'spinner.gif' )}) no-repeat left top;
+    background: url(../images/spinner.gif) no-repeat left top;
     width: 16px;
     height: 16px;
     display: none;

@@ -13,7 +13,7 @@ class Sample implements Serializable {
 
 	static mapping = {
 		columns {
-			assayToken index:'sampletoken_idx'
+			sampleToken index:'sampletoken_idx'
 		}
 	}
 	static constraints = {

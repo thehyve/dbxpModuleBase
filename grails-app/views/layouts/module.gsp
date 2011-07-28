@@ -76,16 +76,54 @@
 		<r:require modules="moduleBase"/>
 
 		<% /* Make sure the module javascript always knows their baseUrl */ %>
-		<r:script>var baseUrl = '${resource(dir: '')}';</r:script>
-
-		<% /* Import stylesheets for basic look and feel */ %>
-		<link rel="stylesheet" href="${createLink( controller: 'css', action: 'module' )}" type="text/css"/>
-
-		<% /* render head of client views */ %>
-		<g:layoutHead/>
+		<r:script disposition="head">var baseUrl = '${resource(dir: '')}';</r:script>
 
 		<% /* include the layout resources that have to go in the head section */ %>
 		<r:layoutResources/>
+
+		<% /* render head of client views */ %>
+		<g:layoutHead/>
+		
+		<% /* Define button icons */ %>
+		<style type="text/css">
+			/* Images for buttons */
+			.buttons .view, 
+			.buttons .show { background-image:  url(${fam.icon( name: 'magnifier' )}); }
+			.buttons .add, 
+			.buttons .create { background-image: url(${fam.icon( name: 'add' )}); }
+			
+			.buttons .edit { background-image:  url(${fam.icon( name: 'pencil' )}); }
+			.buttons .delete, 
+			.buttons .remove { background-image: url(${fam.icon( name: 'delete' )}); }
+			
+			.buttons .back { background-image: url(${fam.icon( name: 'arrow_left' )}); }
+			.buttons .save { background-image:  url(${fam.icon( name: 'accept' )}); }
+			.buttons .cancel { background-image:  url(${fam.icon( name: 'arrow_left' )}); }
+			
+			.buttons .list, 
+			.buttons .backToList { background-image: url(${fam.icon( name: 'application' )}); }
+			.buttons .otherList { background-image: url(${fam.icon( name: 'application_view_detail' )}); }
+			
+			.buttons .addAssociation { background-image:  url(${fam.icon( name: 'application_add' )}); }
+			.buttons .editAssociation {	background-image:  url(${fam.icon( name: 'application_edit' )}); }
+			.buttons .removeAssociation,
+			.buttons .deleteAssociation { background-image:  url(${fam.icon( name: 'application_delete' )}); }
+			
+			.buttons .excel { background-image: url(${fam.icon( name: 'page_excel' )}); }
+			
+			/* Specific options */
+			option.addMore { background-image: url(${fam.icon( name: 'add')}); }
+			option.modify { background-image: url(${fam.icon( name: 'modify')}); }
+			option.locked { background-image: url(${fam.icon( name: 'lock.png')}); }
+			
+			/* Messages and errors */
+			#content p.message { background-image: url(${fam.icon( name: 'user')}); }
+			#content p.error { background-image: url(${fam.icon( name: 'information')}); }
+			
+			/* Icon in the top bar */
+			ul.topnav li.user_info { background-image: url(${fam.icon( name: 'user')}); }
+		</style>
+		
 	</head>
 	<body>
 		<div id="header">
