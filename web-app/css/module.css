@@ -249,7 +249,7 @@ td, th {
 }
 
 th {
-	background: #fff url(../images/tables/shadow.jpg);
+	background: #fff url(../images/datatables/shadow.jpg);
 	color: #666;
 	font-size: 11px;
 	font-weight: bold;
@@ -271,11 +271,11 @@ th.asc a, th.desc a {
 }
 
 th.asc a {
-	background-image: url(../images/tables/sorted_asc.gif);
+	background-image: url(../images/datatables/sort_asc.png);
 }
 
 th.desc a {
-	background-image: url(../images/tables/sorted_desc.gif);
+	background-image: url(../images/datatables/sort_desc.png);
 }
 
 .odd {
