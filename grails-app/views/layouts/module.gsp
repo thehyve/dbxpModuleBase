@@ -113,8 +113,8 @@
 			
 			/* Specific options */
 			option.addMore { background-image: url(${fam.icon( name: 'add')}); }
-			option.modify { background-image: url(${fam.icon( name: 'modify')}); }
-			option.locked { background-image: url(${fam.icon( name: 'lock.png')}); }
+			option.modify { background-image: url(${fam.icon( name: 'layout_add')}); }
+			option.locked { background-image: url(${fam.icon( name: 'lock')}); }
 			
 			/* Messages and errors */
 			#content p.message { background-image: url(${fam.icon( name: 'user')}); }
