@@ -5,9 +5,14 @@ class AssayService {
 
     List getAssaysReadableByUser(User user) {
         def readEnabledAuthorizations = Auth.findAllByUserAndCanRead(user, true)
+		def assays = new ArrayList()
 
 		// find assays
-		readEnabledAuthorizations*.study.assays.flatten().find { it != null }
+		readEnabledAuthorizations*.study.assays.flatten().find{ it != null }.each {
+			assays[ assays.size() ] = it
+		}
+
+		return assays
     }
 
     Map getAssaysReadableByUserAndGroupedByStudy(User user) {
