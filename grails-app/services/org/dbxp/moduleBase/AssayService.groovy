@@ -1,20 +1,18 @@
 package org.dbxp.moduleBase
 
 class AssayService {
-
     static transactional = 'mongo'
 
     List getAssaysReadableByUser(User user) {
-
         def readEnabledAuthorizations = Auth.findAllByUserAndCanRead(user, true)
 
-        readEnabledAuthorizations*.study.assays.flatten()
-
+		// find assays
+		readEnabledAuthorizations*.study.assays.flatten().find { it != null }
     }
 
     Map getAssaysReadableByUserAndGroupedByStudy(User user) {
+		def assays = getAssaysReadableByUser(user)
 
-        getAssaysReadableByUser(user).groupBy { Assay assay -> assay.study }
-
+		return (assays) ? assays.groupBy { Assay assay -> assay.study } : [:]
     }
 }
