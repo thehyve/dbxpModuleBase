@@ -127,6 +127,9 @@ ul.topnav li ul.subnav {
 		-moz-border-radius-bottomright: 5px;
 		-webkit-border-bottom-left-radius: 5px;
 		-webkit-border-bottom-right-radius: 5px;
+		border-radius-bottomleft: 5px;
+		border-radius-bottomright: 5px;
+		
 	border: 1px solid #359;
 	border-top-width: 0;
 	background-color: #F0F8FF; 
@@ -146,6 +149,12 @@ html ul.topnav li ul.subnav li a {
 	float: left;
 	width: 145px;
 	padding-left: 20px;
+	-moz-border-radius-bottomleft: 5px;
+	-moz-border-radius-bottomright: 5px;
+	-webkit-border-bottom-left-radius: 5px;
+	-webkit-border-bottom-right-radius: 5px;
+	border-radius-bottomleft: 5px;
+	border-radius-bottomright: 5px;
 }
 
 html ul.topnav li ul.subnav li a:hover {
