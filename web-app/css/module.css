@@ -118,7 +118,7 @@ ul.topnav li ul.subnav {
 	position: absolute; /*--Important - Keeps subnav from affecting main navigation flow--*/
 	left: 0;
 	top: 36px;
-	margin: 0;
+	margin: -1px 0 0 0;
 	padding: 0;
 	display: none;
 	float: left;
