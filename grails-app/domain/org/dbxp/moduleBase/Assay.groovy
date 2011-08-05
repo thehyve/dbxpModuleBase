@@ -18,6 +18,7 @@ class Assay implements Serializable {
 		columns {
 			assayToken index:'assaytoken_idx'
 		}
+		samples cascade: 'all-delete-orphan'
 	}
 	
 	static constraints = {

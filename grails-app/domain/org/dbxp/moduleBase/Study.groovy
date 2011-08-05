@@ -37,7 +37,6 @@ class Study implements Serializable {
 			studyToken index:'studytoken_idx'
 		}
 		assays cascade: "all-delete-orphan"
-		samples cascade: "all-delete-orphan"
 		auth cascade: "all-delete-orphan"
 		auth lazy: false, batchSize: 10
 	}
