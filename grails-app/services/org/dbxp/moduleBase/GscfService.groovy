@@ -1,11 +1,9 @@
 package org.dbxp.moduleBase
 
-import java.io.Serializable;
-
 import grails.converters.JSON
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
-import org.springframework.web.context.request.RequestContextHolder
 import org.codehaus.groovy.grails.web.json.JSONArray
+import org.springframework.web.context.request.RequestContextHolder
 
 /**
  * EDP (External Data Provider) for GSCF
@@ -89,7 +87,7 @@ class GscfService implements Serializable {
 		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/login/auth_remote?moduleURL=${moduleURL()}&"
 		
 		if( token )
-			redirectURL += "consumer=${consumerID()}&token=$token&"
+			redirectURL += "consumer=${consumerId()}&token=$token&"
 			
 		def returnUrl = paramsMapToURL( params, appendParameters );
 
@@ -111,7 +109,7 @@ class GscfService implements Serializable {
 		def redirectURL = ConfigurationHolder.config.gscf.baseURL + "/logout/remote?moduleURL=${moduleURL()}&"
 
 		if( token )
-			redirectURL += "consumer=${consumerID()}&token=$token&"
+			redirectURL += "consumer=${consumerId()}&token=$token&"
 
 		if( appendReturnUrl ) {
 			def returnUrl = paramsMapToURL( params, appendParameters );
@@ -444,7 +442,7 @@ class GscfService implements Serializable {
 		def args = "moduleURL=${moduleURL()}&" 
 		
 		if( sessionToken )
-			args += "consumer=${consumerID()}&token=$sessionToken&"
+			args += "consumer=${consumerId()}&token=$sessionToken&"
 		
 		args +=	paramsMapToURLRequestString(restParams)
 
@@ -593,8 +591,8 @@ class GscfService implements Serializable {
 	 *
 	 * @return consumerID    String
 	 */
-	private String consumerID() {
-		ConfigurationHolder.config.module.consumerID
+	private String consumerId() {
+		ConfigurationHolder.config.module.consumerId
 	}
 
 	/**

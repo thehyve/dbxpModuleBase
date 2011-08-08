@@ -30,7 +30,7 @@ gscf.baseURL = "http://localhost:8080"
 grails.serverURL = "http://..."
 
 // Consumer ID of this module that is used in communication with GSCF
-module.consumerID = "http://..."
+module.consumerId = "http://..."
 
 // See BaseFilters.groovy
 module.defaultAuthenticationRequired = true

@@ -1,12 +1,12 @@
 package org.dbxp.moduleBase
 
-import grails.test.GrailsUnitTestCase
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
-import org.springframework.mock.web.MockHttpServletRequest
-import com.sun.net.httpserver.HttpServer
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
+import grails.test.GrailsUnitTestCase
+import org.springframework.mock.web.MockHttpServletRequest
+import org.springframework.web.context.request.RequestContextHolder
+import org.springframework.web.context.request.ServletRequestAttributes
 
 /**
  * Class to mock a webservice
@@ -42,7 +42,7 @@ class GscfServiceTests extends GrailsUnitTestCase {
     def port = 9999
     def baseURL = "http://localhost:$port"
     def serverURL = 'http://server'
-    def consumerID = 'consumerABC'
+    def consumerId = 'consumerABC'
     def registerSearchPath = 'searchPath'
     def addStudyPath = 'addStudyPath'
     def studyToken = 'someStudyToken'
@@ -59,7 +59,7 @@ class GscfServiceTests extends GrailsUnitTestCase {
                             registerSearchPath: registerSearchPath,
                             addStudyPath: addStudyPath],
                 grails: [serverURL: serverURL],
-                module: [consumerID: consumerID]
+                module: [consumerId: consumerId]
         ]
 
         // mock the encodeAsURL method on String because it's not available when running unit tests
@@ -185,8 +185,8 @@ or low fat (10 en%) diet after a four week run-in on low fat diet.","Objectives"
         assert service.moduleURL() == serverURL
     }
 
-    void testConsumerID() {
-        assert service.consumerID() == consumerID
+    void testConsumerId() {
+        assert service.consumerID() == consumerId
     }
 
     void testRestURL() {

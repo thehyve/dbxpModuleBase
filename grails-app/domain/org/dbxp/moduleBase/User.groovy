@@ -6,7 +6,7 @@ package org.dbxp.moduleBase
  */
 class User implements Serializable {
 	
-    Long identifier // ID of GSCF user
+    Long identifier // Id of GSCF user
     String username   // Username of GSCF user
 	Boolean isAdministrator
 
