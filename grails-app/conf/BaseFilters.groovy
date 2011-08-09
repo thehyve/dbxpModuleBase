@@ -72,6 +72,10 @@ class BaseFilters {
                     throw new Exception("No GSCF instance specified. Please check configuration and specify GSCF location by setting gscf.baseURL to the URL (without trailing '/') of the correct GSCF instance in your configuration file.")
                 }
 
+                if (!ConfigurationHolder.config.module.consumerId) {
+                    throw new Exception("No module consumer Id specified. Please check configuration and specify the consumer id by setting module.consumerId to the URL of the module.")
+                }
+
                 def loggedIn = authenticationService.checkLogin( request.method, params )
 
                 if (!loggedIn.status) {

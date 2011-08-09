@@ -186,7 +186,7 @@ or low fat (10 en%) diet after a four week run-in on low fat diet.","Objectives"
     }
 
     void testConsumerId() {
-        assert service.consumerID() == consumerId
+        assert service.consumerId() == consumerId
     }
 
     void testRestURL() {
