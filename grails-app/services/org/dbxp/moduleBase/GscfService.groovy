@@ -247,7 +247,7 @@ class GscfService implements Serializable {
 		try {
 			getStudies(sessionToken, [studyToken])?.getAt(0)
 		} catch( e ) {
-			handleGSCFExceptions(sessionToken, 'studies', studyTokens, e)
+			handleGSCFExceptions(sessionToken, 'studies', [studyToken], e)
 			return []
 		}
 	}

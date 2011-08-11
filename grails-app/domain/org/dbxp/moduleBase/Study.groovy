@@ -90,7 +90,11 @@ class Study implements Serializable {
 
 	public def beforeDelete = {
 		def auth = [] + Auth.findAllByStudy( this );
-		auth.each { it.delete( flush: true ) }
+		auth.each {
+			log.debug "Delete authorization: " + auth
+			it.study.removeFromAuth( it );
+			it.delete( flush: true ) 
+		}
 	}
 
 	/**
