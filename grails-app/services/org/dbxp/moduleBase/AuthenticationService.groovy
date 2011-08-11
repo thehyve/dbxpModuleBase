@@ -31,7 +31,7 @@ class AuthenticationService {
 			}
 		}
 		
-		// on all pages of the Metagenomics module a user should be present in the session
+		// on the pages of the module a user should be present in the session
 		if (session.sessionToken) {
 			log.info("SessionToken found, ask GSCF for User information")
 
@@ -56,7 +56,7 @@ class AuthenticationService {
 				if( !user ) {
 					throw new Exception( "User should be authenticated with GSCF, according to the isUserLoggedIn call, but is not when asked for details." )
 				}
-
+				
 				// Locate user in database or create a new user (and save it in the http session)
 				findOrUpdateUser( user )
 				
@@ -97,7 +97,7 @@ class AuthenticationService {
 	public void findOrUpdateUser( def user ) { 
 		def session = getHttpSession()
 		
-		session.user = User.findByIdentifierAndUsername(user.id, user.username)
+		session.user = User.findWhere( "identifier": user.id?.toLong(), "username": user.username );
 		if (!session.user){ // when not found, create a new user
 			def gscfId = user.id;
 			if( !gscfId ) {
