@@ -38,7 +38,7 @@ class Study implements Serializable {
 		}
 		assays cascade: "all-delete-orphan"
 		auth cascade: "all-delete-orphan"
-		auth lazy: false, batchSize: 10
+		auth batchSize: 10
 	}
 
 	static constraints = {
@@ -89,11 +89,11 @@ class Study implements Serializable {
 	public String toString() { return "Study " + id + ": " + ( name ?: "" ) }
 
 	public def beforeDelete = {
-		def auth = [] + Auth.findAllByStudy( this );
+		def auth = [] + this.auth;
 		auth.each {
 			log.debug "Delete authorization: " + auth
 			it.study.removeFromAuth( it );
-			it.delete( flush: true ) 
+			//it.delete( flush: true ) 
 		}
 	}
 
