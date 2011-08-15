@@ -808,7 +808,7 @@ class SynchronizationService {
 			l.each { it.delete() }
 		}
 
-		study.delete( flush: true );
+		study.delete();
 
 	}
 
@@ -827,7 +827,7 @@ class SynchronizationService {
 		}
 
 		assay.study.removeFromAssays( assay );
-		assay.delete( flush: true );
+		assay.delete();
 	}
 
 	/**
