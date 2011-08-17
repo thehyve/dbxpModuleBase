@@ -2,6 +2,7 @@ import javax.servlet.http.HttpServletResponse
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
 import org.dbxp.moduleBase.AuthenticationRequired
 import org.dbxp.moduleBase.NoAuthenticationRequired
+import org.dbxp.moduleBase.RefreshUserInformation
 import org.dbxp.moduleBase.Study
 
 /**
@@ -57,35 +58,54 @@ class BaseFilters {
                     return true
                 }
 				
+				// From here on, we require authentication. So if that fails,
+				// we'll return false.
+				
+				// In order to authenticate, we need the location of GSCF
+				if (!ConfigurationHolder.config.gscf.baseURL) {
+					throw new Exception("No GSCF instance specified. Please check configuration and specify GSCF location by setting gscf.baseURL to the URL (without trailing '/') of the correct GSCF instance in your configuration file.")
+				}
+
+				if (!ConfigurationHolder.config.module.consumerId) {
+					throw new Exception("No module consumer Id specified. Please check configuration and specify the consumer id by setting module.consumerId to the URL of the module.")
+				}
+				
 				if( !isAuthenticationRequired( grailsApplication, controllerName, actionName ) ) {
 					log.trace "No authentication required: " + controllerName + " - " + actionName
+					
+					// We do want to check who is logged in, even when no authentication is required if annotation
+					// UserRefreshRequired is added to the controller or action
+					if( userRefreshRequired( grailsApplication, controllerName, actionName ) ) {
+						def loggedIn = authenticationService.checkLogin( request.method, params );
+
+						if (!loggedIn.status) {
+							// Set the flag loggingIn to true, so the system can synchronize after logging in
+							// See also synchronizeAuthorization Filter
+							session.loggingIn = true;
+		
+							// Sent to the silent redirect
+							redirect( url: loggedIn.redirect + "&silent=true" )
+							return false
+						}
+					}
+					
 					return true
 				} else {
 					log.trace "Authentication required: " + controllerName + " - " + actionName
+
+					//
+					def loggedIn = authenticationService.checkLogin( request.method, params )
+										
+					if (!loggedIn.status) {
+						// Set the flag loggingIn to true, so the system can synchronize after logging in
+						// See also synchronizeAuthorization Filter
+						session.loggingIn = true;
+	
+						redirect(url: loggedIn.redirect)
+						return false
+					}
 				}
 
-                // From here on, we require authentication. So if that fails,
-                // we'll return false.
-				
-                // In order to authenticate, we need the location of GSCF
-				if (!ConfigurationHolder.config.gscf.baseURL) {
-                    throw new Exception("No GSCF instance specified. Please check configuration and specify GSCF location by setting gscf.baseURL to the URL (without trailing '/') of the correct GSCF instance in your configuration file.")
-                }
-
-                if (!ConfigurationHolder.config.module.consumerId) {
-                    throw new Exception("No module consumer Id specified. Please check configuration and specify the consumer id by setting module.consumerId to the URL of the module.")
-                }
-
-                def loggedIn = authenticationService.checkLogin( request.method, params )
-
-                if (!loggedIn.status) {
-					// Set the flag loggingIn to true, so the system can synchronize after logging in
-					// See also synchronizeAuthorization Filter
-					session.loggingIn = true;
-
-                    redirect(url: loggedIn.redirect)
-                    return false
-                }
                 return true
             }
         }
@@ -137,14 +157,10 @@ class BaseFilters {
 					// Reset the flag so the synchronization will only be performed once
 					session.loggingIn = false;
 					
-					if( !session.user ) {
-						throw new Exception( "No user is logged in" )
-					}
-					
-					synchronizationService.initSynchronization( session.sessionToken, session.user )
-
 					// Perform synchronization of authorization for all studies
 					try {
+						synchronizationService.initSynchronization( session.sessionToken, session.user )
+
 						// First synchronize all studies that have been changed
 						def changedStudies = synchronizationService.synchronizeChangedStudies();
 
@@ -227,6 +243,35 @@ class BaseFilters {
 		}
 		
 		return true
+	}
+	
+	protected boolean userRefreshRequired( def grailsApplication, String controllerName, String actionName ) {
+		// This functionality has not been implemented correctly, so never refresh user information.
+		return false;
+		
+		// If no controllerName is given, return configuration value
+		if( !controllerName )
+			return false;
+		
+		// Get instances of the controller class and action to be able
+		// to acquire the authentication annotations.
+		// See http://www.mengu.net/post/annotating-your-grails-controller-classes-and-actions
+		def controllerClass     = grailsApplication.controllerClasses.find { it.name == controllerName.capitalize() }
+
+		// if no action is specified, use the default instead
+		def mutableActionName   = actionName ?: controllerClass.defaultActionName
+		def controllerClazz     = controllerClass.clazz
+
+		def controllerAction    = controllerClazz.declaredFields.find { mutableActionName == it.name.toString() }
+
+		// if no is action found, return true to show a standard 404
+		if (!controllerAction) 
+			return false
+		
+		// Determine whether the annotations tell us to authenticate the user for this action
+		boolean annotationAuthenticationRequired =
+			controllerAction.isAnnotationPresent(RefreshUserInformation) ||
+			controllerClazz.isAnnotationPresent(RefreshUserInformation)
 	}
 }
 
