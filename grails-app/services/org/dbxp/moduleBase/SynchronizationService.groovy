@@ -3,13 +3,19 @@ package org.dbxp.moduleBase
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
 
 class SynchronizationService {
+	// The number of times the system tries to save a record, if it fails due to concurrency
+	// If concurrency issues occur, the system will start the specific step again. It loads the object
+	// from the database again, and repeats the process. After this number of tries, if it still fails,
+	// the process will throw the exception.
+	protected static final int NUM_TRIES_FOR_CONCURRENCY = 5;
+
 	def gscfService
 	def grailsApplication
 
 	String sessionToken = null  // Session token to use for communication
 	User user = null            // Currently logged in user. Must be set when synchronizing authorization
 	boolean eager = false       // When set to true, this method fetches data about all studies from GSCF. Otherwise, it will only look at the
-	// studies marked as dirty in the database. Defaults to false.
+								// studies marked as dirty in the database. Defaults to false.
 
 	static transactional = 'mongo'//true
 
@@ -23,6 +29,126 @@ class SynchronizationService {
 		this.sessionToken = sessionToken;
 		this.user = user;
 	}
+
+	/**
+	 * Performs a full synchronization in order to retrieve all studies
+	 * @return
+	 */
+	public void fullSynchronization() throws Exception {
+		SynchronizationService.startRunning();
+
+		try {
+			def previousEager = this.eager
+			this.eager = true
+			this._synchronizeStudies()
+			this.eager = previousEager
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+	}
+
+	/**
+	 * Perfoms a synchronization for all studies that have been changed
+	 * @return
+	 */
+	public ArrayList<Study> synchronizeChangedStudies() throws Exception {
+		SynchronizationService.startRunning();
+
+		try {
+			return _synchronizeChangedStudies();
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+
+		return null;
+	}
+
+	public ArrayList<Study> synchronizeStudies() throws BadRequestException, NotAuthenticatedException, NotAuthorizedException, ResourceNotFoundException, Exception {
+		SynchronizationService.startRunning();
+
+		try {
+			return _synchronizeStudies()
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+
+		return null;
+
+	}
+
+	/**
+	 * Synchronizes the given study with the data from GSCF
+	 * @param study Study to synchronize
+	 * @return Study    Synchronized study or null if the synchronization has failed
+	 */
+	public Study synchronizeStudy(Study study) throws Exception {
+
+		SynchronizationService.startRunning();
+
+		try {
+			return _synchronizeStudy( study )
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+
+		return study;
+	}
+
+
+	/**
+	 * Retrieves the authorization for the currently logged in user
+	 * Since GSCF only provides authorization information about the currently
+	 * logged in user, we can not guarantee that the authorization information
+	 * is synchronized for all users.
+	 *
+	 * Make sure synchronizationService.user is set beforehand
+	 *
+	 * @param study Study to synchronize authorization for
+	 * @return Auth object for the given study and user or null is the study has been deleted
+	 */
+	public Auth synchronizeAuthorization(Study study) throws Exception {
+
+		SynchronizationService.startRunning();
+
+		try {
+			return _synchronizeAuthorization( study )
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+
+		return study;
+	}
+
+	/**
+	 * Synchronizes the given assay with the data from GSCF
+	 * @param assay Assay to synchronize
+	 * @return Assay    Synchronized assay or null if the synchronization has failed
+	 */
+	public Assay synchronizeAssay(Assay assay) throws Exception {
+
+		SynchronizationService.startRunning();
+
+		try {
+			return _synchronizeAssay( assay )
+		} catch( Exception e ) {
+			throw e;
+		} finally {
+			SynchronizationService.stopRunning();
+		}
+
+		return study;
+	}
+
 
 	/**
 	 * Determines whether the synchronization should be performed or not. This can be entered
@@ -45,22 +171,12 @@ class SynchronizationService {
 		}
 	}
 
-	/**
-	 * Performs a full synchronization in order to retrieve all studies
-	 * @return
-	 */
-	public void fullSynchronization() {
-		def previousEager = this.eager
-		this.eager = true
-		this.synchronizeStudies()
-		this.eager = previousEager
-	}
 
 	/**
 	 * Perfoms a synchronization for all studies that have been changed
 	 * @return
 	 */
-	public ArrayList<Study> synchronizeChangedStudies() {
+	protected ArrayList<Study> _synchronizeChangedStudies() {
 		if (!performSynchronization())
 			return
 
@@ -88,65 +204,71 @@ class SynchronizationService {
 			studies = Study.findAll( "FROM Study s WHERE s.studyToken IN (:tokens)", [ "tokens": studyTokens ] )
 
 		studyVersions.each { gscfStudy ->
-			log.trace "Synchronizing study " + gscfStudy
+			tryWithConcurrencyCheck {
+				log.trace "Synchronizing study " + gscfStudy
 
-			def gscfVersion = gscfStudy.version ?: -1;
-			def localStudy = studies.find { it.studyToken == gscfStudy.studyToken }
+				def gscfVersion = gscfStudy.version ?: -1;
+				def localStudy = studies.find { it.studyToken == gscfStudy.studyToken }
 
-			log.trace "  Local study: " + localStudy
+				log.trace "  Local study found: " + localStudy
 
-			// If the study from GSCF is not found in this database, it has been added
-			// in GSCF. Create a new object in order to be synchronized
-			if( !localStudy ) {
-				def domainClass = determineClassFor( "Study" );
+				// If the study from GSCF is not found in this database, it has been added
+				// in GSCF. Create a new object in order to be synchronized
+				if( !localStudy ) {
+					def domainClass = determineClassFor( "Study" );
 
-				log.trace "  Not found locally. Creating an object: " + domainClass;
+					log.trace "  Not found locally. Creating an object: " + domainClass;
 
-				localStudy = domainClass.newInstance();
-				localStudy.setPropertiesFromGscfJson( gscfStudy );
-				localStudy.isDirty = true;
-			} else if( gscfVersion != localStudy.gscfVersion ){
-				log.trace "  Mark existing study dirty"
-				// Mark existing study dirty if the versions don't match
-				localStudy.isDirty = true
+					localStudy = domainClass.newInstance();
+					localStudy.setPropertiesFromGscfJson( gscfStudy );
+					localStudy.isDirty = true;
+				} else if( gscfVersion != localStudy.gscfVersion ){
+					log.trace "  Mark existing study dirty"
+					// Mark existing study dirty if the versions don't match
+					localStudy.isDirty = true
+				}
+
+				localStudy.save();
 			}
-			localStudy.save()
 		}
 
 		// Mark all studies that this user can read, but were not returned by GSCF as dirty;
 		// those studies are either deleted or authorization has changed
 		def unknownStudies
 
-		if( studyTokens ) {
-			if( user ) {
-				unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "tokens": studyTokens, "user": user ] );
+		tryWithConcurrencyCheck {
+			if( studyTokens ) {
+				if( user ) {
+					unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "tokens": studyTokens, "user": user ] );
+				} else {
+					unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND s.isPublic = true", [ "tokens": studyTokens ] );
+				}
 			} else {
-				unknownStudies = Study.findAll( "FROM Study s WHERE s.studyToken NOT IN (:tokens) AND s.isPublic = true", [ "tokens": studyTokens ] );
+				if( user ) {
+					unknownStudies = Study.findAll( "FROM Study s WHERE exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
+				} else {
+					unknownStudies = Study.findAll( "FROM Study s WHERE s.isPublic = true" );
+				}
 			}
-		} else {
-			if( user ) {
-				unknownStudies = Study.findAll( "FROM Study s WHERE exists( FROM Auth a WHERE a.study = s AND a.user = :user AND a.canRead = true )", [ "user": user ] );
-			} else {
-				unknownStudies = Study.findAll( "FROM Study s WHERE s.isPublic = true" );
+
+			log.trace "Marking " + unknownStudies?.size() + " studies as dirty since the authorization has changed";
+
+			unknownStudies?.each {
+				it.isDirty = true;
+				it.save();
 			}
-		}
 
-		log.trace "Marking " + unknownStudies?.size() + " studies as dirty since the authorization has changed";
-
-		unknownStudies?.each {
-			it.isDirty = true;
-			it.save();
 		}
 
 		// Synchronize dirty studies
-		return synchronizeStudies()
+		return _synchronizeStudies()
 	}
 
 	/**
 	 * Synchronizes all studies with the data from GSCF.
 	 * @return ArrayList    List of studies or null if the synchronization has failed
 	 */
-	public ArrayList<Study> synchronizeStudies() throws BadRequestException, NotAuthenticatedException, NotAuthorizedException, ResourceNotFoundException, Exception {
+	protected ArrayList<Study> _synchronizeStudies() throws BadRequestException, NotAuthenticatedException, NotAuthorizedException, ResourceNotFoundException, Exception {
 		if (!performSynchronization())
 			return Study.list()
 
@@ -169,7 +291,7 @@ class SynchronizationService {
 		// the getStudies method could throw a ResourceNotFoundException or NotAuthorizedException
 		// that can better be handled by synchronizeStudy
 		if (studies.size() == 1) {
-			def newStudy = synchronizeStudy((Study) studies[0])
+			def newStudy = _synchronizeStudy((Study) studies[0])
 			if (newStudy)
 				return [newStudy]
 			else
@@ -225,25 +347,31 @@ class SynchronizationService {
 					log.trace("Study found with name " + studyFound.name)
 
 					// Synchronize the study itself with the data retrieved
-					synchronizeStudy(studyFound, gscfStudy)
+					_synchronizeStudy(studyFound, gscfStudy)
 				} else {
 					log.trace("Study not found. Creating a new one")
 
-					// If it doesn't exist, create a new object
 					def domainClass = determineClassFor( "Study" );
-					studyFound = domainClass.newInstance();
-					studyFound.setPropertiesFromGscfJson( gscfStudy );
-					studyFound.isDirty = true
-					studyFound.save()
+
+					// If it doesn't exist, create a new object
+					tryWithConcurrencyCheck {
+						studyFound = domainClass.newInstance();
+						studyFound.setPropertiesFromGscfJson( gscfStudy );
+						studyFound.isDirty = true
+						studyFound.save()
+					}
 
 					// Synchronize authorization and study assays (since the study itself is already synchronized)
-					def auth = synchronizeAuthorization(studyFound)
+					def auth = _synchronizeAuthorization(studyFound)
 					if (auth && auth.canRead)
 						synchronizeStudyAssays(studyFound)
 
-					// Mark the study as clean
-					studyFound.isDirty = false
-					studyFound.save()
+					// Mark the study as clean (and first retrieve it from the database
+					tryWithConcurrencyCheck {
+						studyFound = domainClass.get( studyFound.id );
+						studyFound.isDirty = false
+						studyFound.save()
+					}
 				}
 			}
 		}
@@ -272,7 +400,7 @@ class SynchronizationService {
 				// Study was not given to us by GSCF. This might be because the study is removed, or because the study is not visible (anymore)
 				// to the current user.
 				// Synchronize authorization and see what is the case (it returns null if the study has been deleted)
-				if (synchronizeAuthorization(existingStudy) == null) {
+				if (_synchronizeAuthorization(existingStudy) == null) {
 					// Update studies variable to keep track of all existing studies
 					studies.remove(existingStudy)
 				}
@@ -287,7 +415,7 @@ class SynchronizationService {
 	 * @param study Study to synchronize
 	 * @return Study    Synchronized study or null if the synchronization has failed
 	 */
-	public Study synchronizeStudy(Study study) {
+	protected Study _synchronizeStudy(Study study) {
 		if (!performSynchronization())
 			return study
 
@@ -304,7 +432,7 @@ class SynchronizationService {
 			newStudy = gscfService.getStudy(sessionToken, study.studyToken)
 		} catch (NotAuthorizedException e) {
 			// User is not authorized to access this study. Update the authorization within the module and return
-			synchronizeAuthorization(study)
+			_synchronizeAuthorization(study)
 			return null
 		} catch (ResourceNotFoundException e) {
 			// Study can't be found within GSCF.
@@ -323,7 +451,7 @@ class SynchronizationService {
 			throw new Exception("No data returned for study " + study.studyToken + " but no error has occurred either. Please contact your system administrator")
 		}
 
-		return synchronizeStudy(study, newStudy)
+		return _synchronizeStudy(study, newStudy)
 	}
 
 	/**
@@ -332,7 +460,7 @@ class SynchronizationService {
 	 * @param newStudy Data to synchronize the study with
 	 * @return Study        Synchronized study or null if the synchronization has failed
 	 */
-	protected Study synchronizeStudy(Study study, def newStudy) {
+	protected Study _synchronizeStudy(Study study, def newStudy) {
 		if (!performSynchronization())
 			return study
 
@@ -352,15 +480,18 @@ class SynchronizationService {
 		def publicStudy = newStudy.published && newStudy[ 'public' ];
 
 		// Mark study dirty to enable synchronization
-		def auth = synchronizeAuthorization(study)
+		def auth = _synchronizeAuthorization(study)
 
 		if (auth?.canRead || publicStudy)
 			synchronizeStudyAssays(study)
 
-		// Update properties and mark as clean
-		study.setPropertiesFromGscfJson( newStudy );
-		study.isDirty = false
-		study.save(flush: true)
+		// Update properties and mark as clean. First retrieve a new update of this study
+		tryWithConcurrencyCheck {
+			study.refresh();
+			study.setPropertiesFromGscfJson( newStudy );
+			study.isDirty = false
+			study.save(flush: true)
+		}
 
 		return study
 	}
@@ -427,19 +558,23 @@ class SynchronizationService {
 					log.trace("Assay found with name " + assayFound.name)
 
 					// Synchronize the assay itself with the data retrieved
-					synchronizeAssay(assayFound, gscfAssay)
+					_synchronizeAssay(assayFound, gscfAssay)
 				} else {
 					log.trace("Assay not found in study. Creating a new one")
 
 					// If it doesn't exist, create a new object
-					def domainClass = determineClassFor( "Assay" );
-					assayFound = domainClass.newInstance();
-					assayFound.study = study;
-					assayFound.setPropertiesFromGscfJson( gscfAssay );
+					tryWithConcurrencyCheck {
+						study.refresh();
 
-					log.trace("Connecting assay to study")
-					study.addToAssays(assayFound)
-					assayFound.save()
+						def domainClass = determineClassFor( "Assay" );
+						assayFound = domainClass.newInstance();
+						assayFound.study = study;
+						assayFound.setPropertiesFromGscfJson( gscfAssay );
+
+						log.trace("Connecting assay to study")
+						study.addToAssays(assayFound)
+						assayFound.save()
+					}
 
 					// Synchronize assay samples (since the assay itself is already synchronized)
 					synchronizeAssaySamples(assayFound)
@@ -491,7 +626,7 @@ class SynchronizationService {
 	 * @param study Study to synchronize authorization for
 	 * @return Auth object for the given study and user or null is the study has been deleted
 	 */
-	public Auth synchronizeAuthorization(Study study) {
+	protected Auth _synchronizeAuthorization(Study study) {
 		if (!performSynchronization())
 			return Auth.findByUserAndStudy(user, study)
 
@@ -523,26 +658,33 @@ class SynchronizationService {
 			return null
 		}
 
-		// Update the authorization object, or create a new one
-		Auth a = Auth.authorization(study, user)
+		Auth a
+		
+		tryWithConcurrencyCheck {
+			study.refresh();
+			user.refresh();
 
-		if (!a) {
-			log.trace("Authorization not found for " + study.studyToken + " and " + user.username + ". Creating a new object")
+			// Update the authorization object, or create a new one
+			a = Auth.authorization(study, user)
 
-			a = Auth.createAuth(study, user)
+			if (!a) {
+				log.trace("Authorization not found for " + study.studyToken + " and " + user.username + ". Creating a new object")
+
+				a = Auth.createAuth(study, user)
+			}
+
+			// Copy properties from gscf object
+			if (gscfAuthorization.canRead instanceof Boolean)
+				a.canRead = gscfAuthorization.canRead.booleanValue()
+
+			if (gscfAuthorization.canWrite instanceof Boolean)
+				a.canWrite = gscfAuthorization.canWrite.booleanValue()
+
+			if (gscfAuthorization.isOwner instanceof Boolean)
+				a.isOwner = gscfAuthorization.isOwner.booleanValue()
+
+			a.save()
 		}
-
-		// Copy properties from gscf object
-		if (gscfAuthorization.canRead instanceof Boolean)
-			a.canRead = gscfAuthorization.canRead.booleanValue()
-
-		if (gscfAuthorization.canWrite instanceof Boolean)
-			a.canWrite = gscfAuthorization.canWrite.booleanValue()
-
-		if (gscfAuthorization.isOwner instanceof Boolean)
-			a.isOwner = gscfAuthorization.isOwner.booleanValue()
-
-		a.save()
 
 		// Remove all authorization for other users, because otherwise the authorization might be out of sync
 		// and we can not check the authorization for other users than the user currently logged in.
@@ -559,7 +701,7 @@ class SynchronizationService {
 	 * @param assay Assay to synchronize
 	 * @return Assay    Synchronized assay or null if the synchronization has failed
 	 */
-	public Assay synchronizeAssay(Assay assay) {
+	protected Assay _synchronizeAssay(Assay assay) {
 		if (!performSynchronization())
 			return assay
 
@@ -576,7 +718,7 @@ class SynchronizationService {
 			newAssay = gscfService.getAssay(sessionToken, assay.study.studyToken, assay.assayToken)
 		} catch (NotAuthorizedException e) {
 			// User is not authorized to access this study. Update the authorization within the module and return
-			synchronizeAuthorization(assay.study)
+			_synchronizeAuthorization(assay.study)
 			return null
 		} catch (ResourceNotFoundException e) {
 			// Assay can't be found within GSCF.
@@ -605,7 +747,7 @@ class SynchronizationService {
 	 * @param newAssay New data for the assay, retrieved from GSCF
 	 * @return Assay    Synchronized assay or null if the synchronization has failed
 	 */
-	protected Assay synchronizeAssay(Assay assay, def newAssay) {
+	protected Assay _synchronizeAssay(Assay assay, def newAssay) {
 		if (!performSynchronization())
 			return assay
 
@@ -622,9 +764,12 @@ class SynchronizationService {
 		}
 
 		log.trace("Assay is found in GSCF: " + assay.name + " / " + newAssay)
-		if( assay.isDifferentFromGscfJson( newAssay ) ) {
-			assay.setPropertiesFromGscfJson( newAssay );
-			assay.save()
+		tryWithConcurrencyCheck {
+			assay.refresh();
+			if( assay.isDifferentFromGscfJson( newAssay ) ) {
+				assay.setPropertiesFromGscfJson( newAssay );
+				assay.save()
+			}
 		}
 
 		// Synchronize samples
@@ -651,7 +796,7 @@ class SynchronizationService {
 			newSamples = gscfService.getSamples(sessionToken, assay.assayToken)
 		} catch (NotAuthorizedException e) {
 			// User is not authorized to access this study. Update the authorization within the module and return
-			synchronizeAuthorization(assay.study)
+			_synchronizeAuthorization(assay.study)
 			return null
 		} catch (ResourceNotFoundException e) {
 			// Assay can't be found within GSCF. Samples will be removed
@@ -691,21 +836,28 @@ class SynchronizationService {
 
 				if (sampleFound) {
 					log.trace "Sample " + sampleFound.token() + " already found in database.";
-					if( sampleFound.isDifferentFromGscfJson( gscfSample ) ) {
-						sampleFound.setPropertiesFromGscfJson( gscfSample );
-						sampleFound.save()
+
+					tryWithConcurrencyCheck {
+						if( sampleFound.isDifferentFromGscfJson( gscfSample ) ) {
+							sampleFound.setPropertiesFromGscfJson( gscfSample );
+							sampleFound.save()
+						}
 					}
 				} else {
 					log.trace("Sample " + gscfSample.sampleToken + " not found in database. Creating a new object.")
 
 					// If it doesn't exist, create a new object. First determine the class to use
-					def domainClass = determineClassFor( "Sample" );
-					sampleFound = domainClass.newInstance()
-					sampleFound.setPropertiesFromGscfJson( gscfSample );
-					assay.addToSamples(sampleFound)
+					tryWithConcurrencyCheck {
+						assay.refresh();
 
-					if (!sampleFound.save()) {
-						log.error("Error while connecting sample to assay: " + sampleFound.errors)
+						def domainClass = determineClassFor( "Sample" );
+						sampleFound = domainClass.newInstance()
+						sampleFound.setPropertiesFromGscfJson( gscfSample );
+						assay.addToSamples(sampleFound)
+
+						if (!sampleFound.save()) {
+							log.error("Error while connecting sample to assay: " + sampleFound.errors)
+						}
 					}
 				}
 			}
@@ -754,7 +906,7 @@ class SynchronizationService {
 	 * @param entity	Sample, Assay or Study
 	 * @return	Class
 	 */
-	public Class determineClassFor( String entity ) {
+	protected Class determineClassFor( String entity ) {
 		def domainClass
 		def configurationClassName
 
@@ -794,7 +946,7 @@ class SynchronizationService {
 	 * @param study
 	 * @return
 	 */
-	public boolean deleteStudy( study ) {
+	protected boolean deleteStudy( study ) {
 		log.debug "Deleting study " + study + " due to synchronization"
 		if( study.assays ) {
 			def l = [] + study.assays
@@ -817,7 +969,7 @@ class SynchronizationService {
 	 * @param assay
 	 * @return
 	 */
-	public boolean deleteAssay( assay ) {
+	protected boolean deleteAssay( assay ) {
 		log.debug "Deleting assay " + assay + " due to synchronization"
 
 		if( assay.samples ) {
@@ -835,10 +987,60 @@ class SynchronizationService {
 	 * @param sample
 	 * @return
 	 */
-	public boolean deleteSample( sample ) {
+	protected boolean deleteSample( sample ) {
 		log.debug "Deleting sample " + sample + " due to synchronization"
 		sample.assay.removeFromSamples( sample );
 		sample.delete();
+	}
+
+	/**
+	 * Execute an action while checking for concurrency issues. If those issues arise,
+	 * the action will be repeated a number of times
+	 * @see NUM_TRIES_FOR_CONCURRENCY
+	 * @param action Action to execute
+	 */
+	protected void tryWithConcurrencyCheck( Closure action ) {
+		def numTries = SynchronizationService.NUM_TRIES_FOR_CONCURRENCY;
+		while( numTries > 0 ) {
+			try {
+				action();
+				numTries = 0;	// Stop repeating this step
+			} catch(org.springframework.dao.OptimisticLockingFailureException e) {
+				// Synchronization has failed due to concurrency. Try again (if wanted)
+				numTries -= 1;
+
+				// If the user has tried too often, throw the exception
+				if( numTries == 0 ) {
+					throw e;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Tells whether synchronization is currently running. Only one synchronization can run at the same moment
+	 * so an exception will occur if starting synchronization again
+	 */
+	public static boolean isRunning = false;
+
+	/**
+	 * Last time the synchronization has run (has finished).
+	 */
+	public static def lastRun = null
+
+	protected static void startRunning() {
+		if( SynchronizationService.isRunning ) {
+			throw new Exception( "Synchronization is already running." );
+		}
+
+		SynchronizationService.isRunning = true
+	}
+
+	protected static void stopRunning( success = true ) {
+		SynchronizationService.isRunning = false;
+		if( success ) {
+			SynchronizationService.lastRun = System.currentTimeMillis();
+		}
 	}
 
 }

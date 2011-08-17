@@ -18,7 +18,7 @@ class User implements Serializable {
 	
 	static mapping = {
 		table 'gscfuser'
-		auth cascade: "all-delete-orphan"
+		auth lazy: false, cascade: "all-delete-orphan"
 	}
 	
 	public String toString() {

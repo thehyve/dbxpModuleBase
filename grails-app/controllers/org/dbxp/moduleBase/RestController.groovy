@@ -74,7 +74,13 @@ class RestController {
 		
 		// Synchronize study if needed
 		if( synchronizeNow ) {
-			synchronizationService.synchronizeStudy( study );
+			try { 
+				synchronizationService.initSynchronization( session.sessionToken, session.user );
+				synchronizationService.synchronizeStudy( study );
+			} catch( Exception e ) {
+				e.printStackTrace();
+				log.error( "Couldn't perform synchronization on notification. The study will be synchronized later on. ")
+			}
 		}
 
 		def jsonData = [ 'studyToken': studyToken, message: "Notify succesful" ];
