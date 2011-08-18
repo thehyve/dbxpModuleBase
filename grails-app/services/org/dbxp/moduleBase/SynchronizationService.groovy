@@ -906,7 +906,11 @@ class SynchronizationService {
 		if( study.auth ) {
 			def l = [] + study.auth
 
-			l.each { it.delete() }
+			l.each {
+                it.study.removeFromAuth(it)
+                it.user.removeFromAuth(it)
+                it.delete()
+            }
 		}
 
 		study.delete();

@@ -1,11 +1,7 @@
 package org.dbxp.moduleBase
 
-import java.io.Serializable;
-
 /**
  * Minimal representation of an assay. The studyToken is the link with an assay object in GSCF.
- * 
- * @see GscfService.getAssay
  */
 class Assay implements Serializable {
 	String assayToken

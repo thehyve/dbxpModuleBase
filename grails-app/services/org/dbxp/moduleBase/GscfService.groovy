@@ -589,7 +589,7 @@ class GscfService implements Serializable {
 	/**
 	 * Consumer ID for connection to of GSCF Rest Controller/API
 	 *
-	 * @return consumerID    String
+	 * @return consumerId    String
 	 */
 	private String consumerId() {
 		ConfigurationHolder.config.module.consumerId
