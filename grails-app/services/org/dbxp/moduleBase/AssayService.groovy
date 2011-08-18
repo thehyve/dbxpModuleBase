@@ -9,11 +9,10 @@ class AssayService {
         getAssaysFromAuthorizations(readEnabledAuthorizations)
     }
 
-    List getAssaysWritableOrOwnedByUser(User user) {
+    List getAssaysWritableByUser(User user) {
         def writeEnabledAuthorizations = Auth.findAllByUserAndCanWrite(user, true)
-        def ownershipAuthorizations = Auth.findAllByUserAndIsOwner(user, true)
 
-		getAssaysFromAuthorizations((writeEnabledAuthorizations+ownershipAuthorizations).unique() )
+		getAssaysFromAuthorizations(writeEnabledAuthorizations)
     }
 
     List getAssaysFromAuthorizations(authorizations) {
