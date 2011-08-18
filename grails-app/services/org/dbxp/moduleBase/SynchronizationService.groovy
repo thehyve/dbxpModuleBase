@@ -35,17 +35,11 @@ class SynchronizationService {
 	 * @return
 	 */
 	public void fullSynchronization() throws Exception {
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			def previousEager = this.eager
 			this.eager = true
 			this._synchronizeStudies()
 			this.eager = previousEager
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
 	}
 
@@ -54,32 +48,15 @@ class SynchronizationService {
 	 * @return
 	 */
 	public ArrayList<Study> synchronizeChangedStudies() throws Exception {
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			return _synchronizeChangedStudies();
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
-
-		return null;
 	}
 
 	public ArrayList<Study> synchronizeStudies() throws BadRequestException, NotAuthenticatedException, NotAuthorizedException, ResourceNotFoundException, Exception {
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			return _synchronizeStudies()
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
-
-		return null;
-
 	}
 
 	/**
@@ -88,18 +65,9 @@ class SynchronizationService {
 	 * @return Study    Synchronized study or null if the synchronization has failed
 	 */
 	public Study synchronizeStudy(Study study) throws Exception {
-
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			return _synchronizeStudy( study )
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
-
-		return study;
 	}
 
 
@@ -115,18 +83,9 @@ class SynchronizationService {
 	 * @return Auth object for the given study and user or null is the study has been deleted
 	 */
 	public Auth synchronizeAuthorization(Study study) throws Exception {
-
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			return _synchronizeAuthorization( study )
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
-
-		return study;
 	}
 
 	/**
@@ -135,20 +94,10 @@ class SynchronizationService {
 	 * @return Assay    Synchronized assay or null if the synchronization has failed
 	 */
 	public Assay synchronizeAssay(Assay assay) throws Exception {
-
-		SynchronizationService.startRunning();
-
-		try {
+		asSynchronization {
 			return _synchronizeAssay( assay )
-		} catch( Exception e ) {
-			throw e;
-		} finally {
-			SynchronizationService.stopRunning();
 		}
-
-		return study;
 	}
-
 
 	/**
 	 * Determines whether the synchronization should be performed or not. This can be entered
@@ -228,7 +177,7 @@ class SynchronizationService {
 					localStudy.isDirty = true
 				}
 
-				localStudy.save();
+				localStudy.save( flush: true );
 			}
 		}
 
@@ -358,7 +307,7 @@ class SynchronizationService {
 						studyFound = domainClass.newInstance();
 						studyFound.setPropertiesFromGscfJson( gscfStudy );
 						studyFound.isDirty = true
-						studyFound.save()
+						studyFound.save(flush: true)
 					}
 
 					// Synchronize authorization and study assays (since the study itself is already synchronized)
@@ -368,7 +317,7 @@ class SynchronizationService {
 
 					// Mark the study as clean (and first retrieve it from the database
 					tryWithConcurrencyCheck {
-						studyFound = domainClass.get( studyFound.id );
+						studyFound = studyFound.refresh();
 						studyFound.isDirty = false
 						studyFound.save()
 					}
@@ -573,7 +522,7 @@ class SynchronizationService {
 
 						log.trace("Connecting assay to study")
 						study.addToAssays(assayFound)
-						assayFound.save()
+						assayFound.save(flush: true)
 					}
 
 					// Synchronize assay samples (since the assay itself is already synchronized)
@@ -855,7 +804,7 @@ class SynchronizationService {
 						sampleFound.setPropertiesFromGscfJson( gscfSample );
 						assay.addToSamples(sampleFound)
 
-						if (!sampleFound.save()) {
+						if (!sampleFound.save( flush: true )) {
 							log.error("Error while connecting sample to assay: " + sampleFound.errors)
 						}
 					}
@@ -1014,6 +963,34 @@ class SynchronizationService {
 					throw e;
 				}
 			}
+		}
+	}
+	
+	/**
+	 * Runs a piece of code while making sure the code (or another synchronization part)
+	 * won't run simultaneously
+	 * @param action	Code to execute
+	 */
+	protected def asSynchronization( Closure action ) {
+		// Tell the system we are running a synchronization, and raise an 
+		// error if it has already started
+		SynchronizationService.startRunning();
+		
+		try {
+			// Execute the action
+			def returnData = action();
+			
+			// Make sure the system knows this synchronization has stopped,
+			// and update the time of last synchronization
+			SynchronizationService.stopRunning( true );
+			
+			// Send the data back to the user
+			return returnData;	
+		} catch( Exception e ) {
+			// Make sure the system knows this synchronization has stopped,
+			// but don't update the time of last synchronization
+			SynchronizationService.stopRunning( false );
+			throw e;
 		}
 	}
 

@@ -72,13 +72,17 @@ class BaseFilters {
 				
 				if( !isAuthenticationRequired( grailsApplication, controllerName, actionName ) ) {
 					log.trace "No authentication required: " + controllerName + " - " + actionName
-					
-					// We do want to check who is logged in, even when no authentication is required if annotation
-					// UserRefreshRequired is added to the controller or action
-					if( userRefreshRequired( grailsApplication, controllerName, actionName ) ) {
-						def loggedIn = authenticationService.checkLogin( request.method, params );
 
-						if (!loggedIn.status) {
+					// We do want to check who is logged in, even when no authentication is required if annotation
+					// UserRefreshRequired is added to the controller or action.
+					if( userRefreshRequired( grailsApplication, controllerName, actionName ) ) {
+						log.trace "Refreshing user information: " + controllerName + " - " + actionName
+						def loggedIn = authenticationService.checkLogin( request.method, params );
+						
+						// However, if the user returns here and we see that he just returned from (silent) login
+						// (we can see that by checking 'session.loggingIn') he should never be sent to the login 
+						// page again (to prevent an infinite loop).
+						if (!session.loggingIn && !loggedIn.status) {
 							// Set the flag loggingIn to true, so the system can synchronize after logging in
 							// See also synchronizeAuthorization Filter
 							session.loggingIn = true;
@@ -156,6 +160,10 @@ class BaseFilters {
 				if( session.loggingIn ) {
 					// Reset the flag so the synchronization will only be performed once
 					session.loggingIn = false;
+					
+					// If no user is logged in, there is no need to synchronize authorization
+					if( !session.user ) 
+						return true
 					
 					// Perform synchronization of authorization for all studies
 					try {
@@ -247,7 +255,7 @@ class BaseFilters {
 	
 	protected boolean userRefreshRequired( def grailsApplication, String controllerName, String actionName ) {
 		// This functionality has not been implemented correctly, so never refresh user information.
-		return false;
+		//return false;
 		
 		// If no controllerName is given, return configuration value
 		if( !controllerName )

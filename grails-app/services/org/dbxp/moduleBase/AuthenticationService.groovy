@@ -16,18 +16,25 @@ class AuthenticationService {
      */
 	public Map checkLogin( requestMethod, params ) {
 		def session = getHttpSession()
+		def loggedInWithSessionToken = null;
 		
 		// If a user is already logged in, only check whether the credentials are still valid. If not, the user should authenticate again
-		if( session.user && session.user != null && session.sessionToken && gscfService.isUserLoggedIn( session.sessionToken ) ) {
-			// If we don't refresh the user object, an old hibernate session could still be attached to the object
-			// raising errors later on (Lazy loading errors)
-			try {
-				session.user.refresh()
-				return [ "status": true ]
-			} catch( Exception ex ) {
-				// If an exception occurs, the user is not correctly refreshed. Send the user back to gscf
-				session.user = null
-				log.info( "User refresh failed" )
+		if( session.user && session.user != null && session.sessionToken ) {
+			// We store the output of this isUser call, since otherwise it can happen that exactly the same
+			// call will be made again in line 48.
+			loggedInWithSessionToken = gscfService.isUserLoggedIn( session.sessionToken )
+			
+			if( loggedInWithSessionToken ) {
+				// If we don't refresh the user object, an old hibernate session could still be attached to the object
+				// raising errors later on (Lazy loading errors)
+				try {
+					session.user.refresh()
+					return [ "status": true ]
+				} catch( Exception ex ) {
+					// If an exception occurs, the user is not correctly refreshed. Send the user back to gscf
+					session.user = null
+					log.info( "User refresh failed" )
+				}
 			}
 		}
 		
@@ -38,10 +45,11 @@ class AuthenticationService {
 			// try to identify the user with the sessionToken, since the user has logged in before
 			try {
 				// First check if the user is authenticated. If he isn't, he should provide credentials at GSCF
-				def authenticated = gscfService.isUserLoggedIn( session.sessionToken )
+				def authenticated = ( loggedInWithSessionToken != null ? loggedInWithSessionToken : gscfService.isUserLoggedIn( session.sessionToken ) )
 				
 				if( !authenticated ) {
 					log.info "Not authenticated at GSCF."
+					session.user = null;
 					if( requestMethod == "GET" ) {
 						return [ "status": false, "redirect": gscfService.urlAuthRemote(params, session.sessionToken) ]
 					} else {
