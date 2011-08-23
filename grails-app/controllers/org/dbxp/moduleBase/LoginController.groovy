@@ -5,6 +5,6 @@ class LoginController {
 	// logging in, the user will be redirected to the home page of the module
 	@AuthenticationRequired
 	def index = {
-		redirect( url: g.resource( 'dir': '' ) );
+		redirect( controller: 'home' );
 	}
 }
