@@ -13,9 +13,11 @@ class Sample implements Serializable {
 
 	static mapping = {
 		columns {
+			assay index:'assay_idx'
 			sampleToken index:'sampletoken_idx'
 		}
 	}
+	
 	static constraints = {
 	}
 
@@ -24,7 +26,6 @@ class Sample implements Serializable {
 	public String toString() {
 		return "Sample " + id + ": " + ( name ?: "" )
 	}
-
 
 	/**
 	 * Sets the properties of this object, based on the JSON object given by GSCF

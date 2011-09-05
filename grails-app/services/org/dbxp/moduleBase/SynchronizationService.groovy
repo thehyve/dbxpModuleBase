@@ -9,6 +9,11 @@ class SynchronizationService {
 	// the process will throw the exception.
 	protected static final int NUM_TRIES_FOR_CONCURRENCY = 5;
 
+	// These variables are needed in order to cleanup gorm with large studies
+	// See also cleanupGorm method
+	def sessionFactory
+	def propertyInstanceMap = org.codehaus.groovy.grails.plugins.DomainClassGrailsPlugin.PROPERTY_INSTANCE_MAP
+	
 	def gscfService
 	def grailsApplication
 
@@ -777,12 +782,13 @@ class SynchronizationService {
 	protected void synchronizeAssaySamples(Assay assay, def newSamples) {
 		// Otherwise, we search for all samples in the new list, if they
 		// already exist in the list of samples
+		def i = 0;
 		newSamples.each { gscfSample ->
 			log.trace("Processing GSCF sample " + gscfSample.sampleToken + ": " + gscfSample)
 			if (gscfSample.name) {
-
-				Sample sampleFound = assay.samples.find { it.sampleToken == gscfSample.sampleToken }
-
+				// Find this sample in the database, instead of in the samples list
+				Sample sampleFound = Sample.findByAssayAndSampleToken( assay, gscfSample.sampleToken );
+				
 				if (sampleFound) {
 					log.trace "Sample " + sampleFound.token() + " already found in database.";
 
@@ -796,19 +802,26 @@ class SynchronizationService {
 					log.trace("Sample " + gscfSample.sampleToken + " not found in database. Creating a new object.")
 
 					// If it doesn't exist, create a new object. First determine the class to use
-					tryWithConcurrencyCheck {
-						assay.refresh();
-
+					tryWithConcurrencyCheck { concurrencyIndex ->
+						// Only refresh assay if concurrency errors have occurred
+						if( concurrencyIndex > 0 )
+							assay.refresh();
+							
 						def domainClass = determineClassFor( "Sample" );
 						sampleFound = domainClass.newInstance()
 						sampleFound.setPropertiesFromGscfJson( gscfSample );
+						
 						assay.addToSamples(sampleFound)
-
+						
 						if (!sampleFound.save( flush: true )) {
 							log.error("Error while connecting sample to assay: " + sampleFound.errors)
 						}
 					}
 				}
+				 
+				// Clear hibernate session, in order to handle large amounts of
+				// samples
+				if (i++ % 20 == 0) cleanUpGorm()
 			}
 		}
 	}
@@ -954,9 +967,10 @@ class SynchronizationService {
 	 */
 	protected void tryWithConcurrencyCheck( Closure action ) {
 		def numTries = SynchronizationService.NUM_TRIES_FOR_CONCURRENCY;
+		def i = 0;
 		while( numTries > 0 ) {
 			try {
-				action();
+				action( i++ );
 				numTries = 0;	// Stop repeating this step
 			} catch(org.springframework.dao.OptimisticLockingFailureException e) {
 				// Synchronization has failed due to concurrency. Try again (if wanted)
@@ -997,7 +1011,21 @@ class SynchronizationService {
 			throw e;
 		}
 	}
-
+	
+	/**
+	 * When synchronizing lots of samples, the hibernate session must be cleaned, otherwise
+	 * the synchronization will be very very slow. See http://naleid.com/blog/2009/10/01/batch-import-performance-with-grails-and-mysql/
+	 * for more information
+	 * @return
+	 */
+	def cleanUpGorm() {
+		log.trace( "Cleaning hibernate session" );
+		def session = sessionFactory.currentSession
+		session.flush()
+		session.clear()
+		propertyInstanceMap.get().clear()
+	}
+ 
 	/**
 	 * Tells whether synchronization is currently running. Only one synchronization can run at the same moment
 	 * so an exception will occur if starting synchronization again
@@ -1023,5 +1051,4 @@ class SynchronizationService {
 			SynchronizationService.lastRun = System.currentTimeMillis();
 		}
 	}
-
 }
