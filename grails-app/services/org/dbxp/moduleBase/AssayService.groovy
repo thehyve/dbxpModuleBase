@@ -4,7 +4,7 @@ class AssayService {
     static transactional = 'mongo'
 
 	Assay getAssayReadableByUserById(User user, assayId = null) {
-		getAssaysReadableByUser(user).find { it.id == assayId }
+		getAssaysReadableByUser(user).find { it.id == assayId as Long }
 	}
     
     List getAssaysReadableByUser(User user) {
