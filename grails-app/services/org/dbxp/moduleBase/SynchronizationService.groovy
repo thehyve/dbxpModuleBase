@@ -1,6 +1,8 @@
 package org.dbxp.moduleBase
 
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
+import org.hibernate.StatelessSession
+import org.hibernate.Transaction
 
 class SynchronizationService {
 	// The number of times the system tries to save a record, if it fails due to concurrency
@@ -159,7 +161,7 @@ class SynchronizationService {
 
 		studyVersions.each { gscfStudy ->
 			tryWithConcurrencyCheck {
-				log.trace "Synchronizing study " + gscfStudy
+				log.info "Synchronizing study " + gscfStudy
 
 				def gscfVersion = gscfStudy.version ?: -1;
 				def localStudy = studies.find { it.studyToken == gscfStudy.studyToken }
@@ -321,8 +323,10 @@ class SynchronizationService {
 						synchronizeStudyAssays(studyFound)
 
 					// Mark the study as clean (and first retrieve it from the database
-					tryWithConcurrencyCheck {
-						studyFound = studyFound.refresh();
+					tryWithConcurrencyCheck { concurrencyIndex ->
+						// Only refresh study if concurrency errors have occurred
+						if( concurrencyIndex > 0 )
+							studyFound = studyFound.refresh();
 						studyFound.isDirty = false
 						studyFound.save()
 					}
@@ -440,8 +444,11 @@ class SynchronizationService {
 			synchronizeStudyAssays(study)
 
 		// Update properties and mark as clean. First retrieve a new update of this study
-		tryWithConcurrencyCheck {
-			study.refresh();
+		tryWithConcurrencyCheck { concurrencyIndex ->
+			// Only refresh study if concurrency errors have occurred
+			if( concurrencyIndex > 0 )
+				study.refresh();
+			
 			study.setPropertiesFromGscfJson( newStudy );
 			study.isDirty = false
 			study.save(flush: true)
@@ -514,11 +521,14 @@ class SynchronizationService {
 					// Synchronize the assay itself with the data retrieved
 					_synchronizeAssay(assayFound, gscfAssay)
 				} else {
-					log.trace("Assay not found in study. Creating a new one")
-
+					log.trace("Assay not found in study " + study.studyToken + " - " + study.id + ". Creating a new one (assayToken = " + gscfAssay.assayToken )
+					study.assays.each { println "Assay in study: " + it.id + " - " + it.assayToken }
+					
 					// If it doesn't exist, create a new object
-					tryWithConcurrencyCheck {
-						study.refresh();
+					tryWithConcurrencyCheck { concurrencyIndex ->
+						// Only refresh study if concurrency errors have occurred
+						if( concurrencyIndex > 0 )
+							study.refresh();
 
 						def domainClass = determineClassFor( "Assay" );
 						assayFound = domainClass.newInstance();
@@ -555,12 +565,12 @@ class SynchronizationService {
 		def numAssays = assays.size()
 		for (int i = numAssays - 1; i >= 0; i--) {
 			def existingAssay = assays[i]
-
+			
 			Assay assayFound = (Assay) newAssays.find { it.assayToken == existingAssay.assayToken }
-
+			
 			if (!assayFound) {
 				log.trace("Assay " + existingAssay.assayToken + " not found. Removing it.")
-
+				
 				// The assay has been removed
 				deleteAssay( existingAssay );
 			}
@@ -614,9 +624,12 @@ class SynchronizationService {
 
 		Auth a
 		
-		tryWithConcurrencyCheck {
-			study.refresh();
-			user.refresh();
+		tryWithConcurrencyCheck { concurrencyIndex ->
+			// Only refresh study if concurrency errors have occurred
+			if( concurrencyIndex > 0 ) {
+				study.refresh();
+				user.refresh();
+			}
 
 			// Update the authorization object, or create a new one
 			a = Auth.authorization(study, user)
@@ -718,8 +731,11 @@ class SynchronizationService {
 		}
 
 		log.trace("Assay is found in GSCF: " + assay.name + " / " + newAssay)
-		tryWithConcurrencyCheck {
-			assay.refresh();
+		tryWithConcurrencyCheck {concurrencyIndex ->
+			// Only refresh study if concurrency errors have occurred
+			if( concurrencyIndex > 0 )
+				assay.refresh();
+				
 			if( assay.isDifferentFromGscfJson( newAssay ) ) {
 				assay.setPropertiesFromGscfJson( newAssay );
 				assay.save()
@@ -769,8 +785,10 @@ class SynchronizationService {
 			assay.removeSamples()
 			return []
 		}
-
+		
+		
 		synchronizeAssaySamples(assay, newSamples)
+		
 		return handleDeletedSamples(assay, newSamples)
 	}
 
@@ -813,17 +831,21 @@ class SynchronizationService {
 						
 						assay.addToSamples(sampleFound)
 						
-						if (!sampleFound.save( flush: true )) {
+						if ( !sampleFound.save( flush: true ) ) {
 							log.error("Error while connecting sample to assay: " + sampleFound.errors)
 						}
 					}
 				}
-				 
+		
 				// Clear hibernate session, in order to handle large amounts of
 				// samples
-				if (i++ % 20 == 0) cleanUpGorm()
+				if (i++ % 20 == 0) cleanUpGorm( assay )
 			}
 		}
+		
+		// Make sure the assay and its samples are available in the hibernate session
+		assay.refresh()
+		def tmp = assay.samples;
 	}
 
 	/**
@@ -1015,15 +1037,15 @@ class SynchronizationService {
 	/**
 	 * When synchronizing lots of samples, the hibernate session must be cleaned, otherwise
 	 * the synchronization will be very very slow. See http://naleid.com/blog/2009/10/01/batch-import-performance-with-grails-and-mysql/
-	 * for more information
+	 * for more information.
+	 * 
+	 * However, we are not able to clear the whole session, because then the assay and study
+	 * are also removed from session, and that will raise all kinds of hibernate errors. 
 	 * @return
 	 */
-	def cleanUpGorm() {
-		log.trace( "Cleaning hibernate session" );
-		def session = sessionFactory.currentSession
-		session.flush()
-		session.clear()
-		propertyInstanceMap.get().clear()
+	def cleanUpGorm( Assay a ) {
+		log.trace( "Cleaning assay from hibernate cache" );
+		sessionFactory.evict(Assay.class, a.id); //
 	}
  
 	/**
