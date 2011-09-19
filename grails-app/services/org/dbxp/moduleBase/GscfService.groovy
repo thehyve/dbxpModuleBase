@@ -37,41 +37,52 @@ class GscfService implements Serializable {
 	 * @return			String with URL for the current request 
 	 */
 	String paramsMapToURL( params, appendParameters = true ) {
+		// get http request
+		def request = RequestContextHolder.requestAttributes.request
+
+		// build up return URL
 		def returnUrl = ConfigurationHolder.config.grails.serverURL
 
-		// make a clone so we can manipulate it's value
-		def paramsClone = params?.clone()
-
-		// Append other parameters (but only if this request is a GET request)
-		if (params) {
-			def request = RequestContextHolder.requestAttributes.request
-
-			// add controller, action, and id (if available) to the returnURL
-			// while removing them from params and adding '/' where needed
-			if (paramsClone.controller) {
-				returnUrl += "/${paramsClone.remove('controller')}"
-				if (paramsClone.action) {
-					returnUrl += "/${paramsClone.remove('action')}"
-					if (paramsClone.id) {
-						returnUrl += "/${paramsClone.remove('id')}"
-					}
-				}
-			}
-
-			if( appendParameters ) {
-				if (request.method != "GET") {
-					// Only GET parameters can be sent to the user. The calling method can call the method again with the appendParameters
-					// property set to false or without a parameters object.
-					throw new Exception("Parameters can only be added in GET requests")
-				}
-				def paramString = paramsMapToURLRequestString(paramsClone)
-
-				if( paramString )
-					returnUrl += '?' + paramString
-			}
+		// replace contextPath with forwardURI
+		// eg. /metabolomicsModule --> /metabolomicsModule/complete/path
+		if (request.properties.contextPath != request.properties.forwardURI) {
+			returnUrl = returnUrl.replace(request.properties.contextPath, request.properties.forwardURI)
 		}
 
-		return returnUrl;
+		// check if this is a GET request and parameters are added
+		if (request.method != "GET" && (request.properties.queryString || (params && appendParameters))) {
+			// Only GET parameters can be sent to the user. The calling method can call the method again with the appendParameters
+			// property set to false or without a parameters object.
+			throw new Exception("Parameters can only be added in GET requests")
+		}
+
+		// append request parameters
+		if (request.properties.queryString) {
+			// append queryString to returnURL
+			returnUrl += "?${request.properties.queryString}"
+		}
+
+		// have we got params?
+		if (params) {
+			// remove controller and action from params if they exist as legacy
+			// code might still add these.
+			// Building a returnUrl based on controller and action sounds great,
+			// but causes problems with client applications which use relative
+			// paths. Especially when the urlmapping for "/" points to a controller
+			// and action, the returnUrl will contain these as well breaking any
+			// code that uses relative paths. Using the get request itself does not
+			// create this problem.
+			params.remove('action')
+			params.remove('controller')
+		}
+
+		// append params argument to returnUrl
+		if (appendParameters && params && params.size() > 0) {
+			returnUrl += ((request.properties.queryString) ? "&" : "?") + paramsMapToURLRequestString(params)
+		}
+
+		// return the constructed return url
+		return returnUrl
 	}
 
 	/**
