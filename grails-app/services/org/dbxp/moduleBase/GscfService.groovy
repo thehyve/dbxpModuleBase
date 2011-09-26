@@ -90,7 +90,8 @@ class GscfService implements Serializable {
 	 *
 	 * @param params 			Parameters of the action called
 	 * @param token				Session token
-	 * @param appendParameters	Boolean to set whether request parameters should be added to the URL. 
+	 * @param appendParameters	Boolean to set whether request parameters should be added to the URL. With a 
+	 * 							POST request, the parameters will not be sent  
 	 * 							If set to true with a POST request, an exception will occur
 	 * @return URL to redirect the user to
 	 */
@@ -100,7 +101,20 @@ class GscfService implements Serializable {
 		if( token )
 			redirectURL += "consumer=${consumerId()}&token=$token&"
 			
-		def returnUrl = paramsMapToURL( params, appendParameters );
+		// If the request is made using POST, we can't append parameters
+		// in that case, the exception should be could, and we will create a URL
+		// without appending the params
+		def returnUrl
+		
+		// get http request
+		def request = RequestContextHolder.requestAttributes.request
+
+		if( request.method == "GET" ) {
+			returnUrl = paramsMapToURL( params, appendParameters );
+		} else {
+			request.properties.queryString = "";
+			returnUrl = paramsMapToURL( params, false );
+		}
 
 		redirectURL + 'returnUrl=' + returnUrl.encodeAsURL()
 	}
