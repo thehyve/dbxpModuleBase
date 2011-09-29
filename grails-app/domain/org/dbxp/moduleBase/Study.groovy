@@ -59,6 +59,10 @@ class Study implements Serializable {
 	}
 
 	public boolean canRead( User user ) {
+		// Public studies can be read by anyone
+		if( isPublic )
+			return true
+		
 		Auth authorization = auth.find { it.user.equals( user ) }
 
 		if( !authorization )
