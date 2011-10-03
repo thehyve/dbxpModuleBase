@@ -63,6 +63,10 @@ class Study implements Serializable {
 		if( isPublic )
 			return true
 		
+		// Administrators may read every study
+		if( user?.isAdministrator )
+			return true
+	
 		Auth authorization = auth.find { it.user.equals( user ) }
 
 		if( !authorization )
@@ -72,6 +76,10 @@ class Study implements Serializable {
 	}
 
 	public boolean canWrite( User user ) {
+		// Administrators may write every study
+		if( user?.isAdministrator )
+			return true
+		
 		Auth authorization = auth.find { it.user.equals( user ) }
 
 		if( !authorization )
@@ -147,10 +155,15 @@ class Study implements Serializable {
 	 * @return		List of study objects
 	 */
 	public static def giveReadableStudies( User user ) {
-		if( user )
-			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canRead = true )", [ "user": user ] )
-		else
+		if( user ) {
+			if( user.isAdministrator ) {
+				return Study.list();
+			} else {
+				return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canRead = true )", [ "user": user ] )
+			}
+		} else {
 			return Study.executeQuery( "SELECT DISTINCT s FROM Study s WHERE s.isPublic = true" )
+		}
 	}
 
 	/**
@@ -159,10 +172,15 @@ class Study implements Serializable {
 	 * @return		List of study objects
 	 */
 	public static def giveWritableStudies( User user ) {
-		if( user )
-			return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canWrite = true )", [ "user": user ] )
-		else
+		if( user ) {
+			if( user.isAdministrator ) {
+				return Study.list();
+			} else {
+				return Study.executeQuery( "SELECT DISTINCT s FROM Study s, Auth a WHERE ( a.user = :user AND a.study = s AND a.canWrite = true )", [ "user": user ] )
+			}
+		} else { 
 			return []
+		}
 	}
 
 
