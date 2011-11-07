@@ -133,6 +133,10 @@
 				<g:pageProperty name="page.topnav" />
 				<li class="user_info">
 					<g:if test="${session?.user}">
+						<g:if test="${session?.user?.shibbolethUser}">
+						Hello ${session?.user?.displayName}
+						</g:if><g:else>
+						</g:else>
 						Hello ${session?.user?.username}&nbsp;&nbsp;|&nbsp;
 			        	<g:link controller="logout" action="index">sign out</g:link>
 			        </g:if>
