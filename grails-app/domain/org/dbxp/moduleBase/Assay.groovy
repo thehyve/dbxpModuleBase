@@ -18,7 +18,7 @@ class Assay implements Serializable {
 	}
 
 	static constraints = {
-		assayToken(unique:true)
+		//assayToken(unique:true)
 	}
 
 	public String token() { return assayToken; }
