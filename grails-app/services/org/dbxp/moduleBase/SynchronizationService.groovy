@@ -1059,7 +1059,7 @@ class SynchronizationService {
 	 */
 	public static def lastRun = null
 
-	protected static void startRunning() {
+	protected synchronized static void startRunning() {
 		if( SynchronizationService.isRunning ) {
 			throw new Exception( "Synchronization is already running." );
 		}
@@ -1067,7 +1067,7 @@ class SynchronizationService {
 		SynchronizationService.isRunning = true
 	}
 
-	protected static void stopRunning( success = true ) {
+	protected synchronized static void stopRunning( success = true ) {
 		SynchronizationService.isRunning = false;
 		if( success ) {
 			SynchronizationService.lastRun = System.currentTimeMillis();
