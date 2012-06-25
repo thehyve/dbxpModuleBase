@@ -1,16 +1,9 @@
 class DbxpModuleBaseGrailsPlugin {
     // the plugin version
-    def version = "0.4.17"
-	
+    def version = "0.4.18"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3.7 > *"
-    // the other plugins this plugin depends on
-    def dependsOn = [
-		jquery:'1.7.1 > *',
-		jqueryDatatables:'1.7.5 > *',
-		jqueryUi:'1.8.15 > *',
-		famfamfam:'1.0.1',
-		resources:'1.1.1 > *']
+    // the other plugins this plugin depends on are declared in BuildConfig.groovy
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
             "grails-app/views/error.gsp",
