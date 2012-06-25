@@ -26,6 +26,13 @@ grails.project.dependency.resolution = {
         //mavenRepo "http://download.java.net/maven/2/"
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
+	plugins {
+		compile ':jquery:1.7.1'
+		compile ':jquery-datatables:1.7.5'
+		compile ':jquery-ui:1.8.15'
+		compile ':famfamfam:1.0.1'
+		compile ':resources:1.1.1'
+	}
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
 
