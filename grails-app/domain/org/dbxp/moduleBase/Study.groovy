@@ -42,7 +42,7 @@ class Study implements Serializable {
 	}
 
 	static constraints = {
-		//studyToken(unique:true)
+		studyToken(unique:true)
 		name(nullable:true)
 		isDirty(nullable:true)
 	}
