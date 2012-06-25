@@ -1,0 +1,16 @@
+ws
+*Db.properties
+*Db.script
+.settings
+eclipse
+stacktrace.log
+target
+/plugins
+/web-app/plugins
+/web-app/WEB-INF/classes
+.idea
+*.iml
+/target-eclipse/*
+grails-dbxp-module-base-0.4.18.zip
+grails-dbxp-module-base-0.4.18.zip.sha1
+plugin.xml
