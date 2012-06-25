@@ -736,15 +736,10 @@ class SynchronizationService {
 			if( concurrencyIndex > 0 )
 				assay.refresh();
 				
-				log.trace("CHECKING!!!!")
 			if( assay.isDifferentFromGscfJson( newAssay ) ) {
-				log.trace("SDFJHASDFHK")
 				assay.setPropertiesFromGscfJson( newAssay );
-				log.trace("EENMAAL: "+assay)
 				assay.save(failOnError: true, flush: true)
-				log.trace("TWEEMAAL: "+assay)
 				assay.refresh()
-				log.trace("DRIEMAAL: "+assay)
 			}
 		}
 
@@ -752,7 +747,6 @@ class SynchronizationService {
 		synchronizeAssaySamples(assay)
 		
 		assay.refresh()
-		log.trace("VIERMAAL: "+assay)
 
 		return assay
 	}
@@ -812,10 +806,8 @@ class SynchronizationService {
 		def i = 0;
 		newSamples.each { gscfSample ->
 			log.trace("Processing GSCF sample " + gscfSample.sampleToken + ": " + gscfSample)
-			log.trace("DDDDDDDAAA123123123123AA");
 			if (gscfSample.name) {
 				// Find this sample in the database, instead of in the samples list
-				log.trace("JAAA123123123AA");
 				Sample sampleFound = Sample.findByAssayAndSampleToken( assay, gscfSample.sampleToken );
 				
 				if (sampleFound) {
