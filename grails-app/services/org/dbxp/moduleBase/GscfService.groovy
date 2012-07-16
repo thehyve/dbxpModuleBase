@@ -13,6 +13,7 @@ import org.springframework.web.context.request.RequestContextHolder
  */
 class GscfService implements Serializable {
 
+	// No methods in this class change anything in the SAM database, so they don't have to be transactional
 	static transactional = false
 
 	/**

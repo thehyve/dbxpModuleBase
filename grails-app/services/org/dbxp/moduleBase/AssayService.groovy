@@ -1,7 +1,10 @@
 package org.dbxp.moduleBase
 
+import org.springframework.transaction.annotation.Transactional
+
+// Set all methods to read-only transactional
+@Transactional(readOnly = true)
 class AssayService {
-    static transactional = 'mongo'
 
 	Assay getAssayReadableByUserById(User user, assayId = null) {
 		getAssaysReadableByUser(user).find { it.id == assayId as Long }

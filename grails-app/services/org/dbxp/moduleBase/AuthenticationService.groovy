@@ -6,7 +6,7 @@ import org.springframework.web.context.request.RequestContextHolder
 class AuthenticationService {
 	def gscfService
 	
-    static transactional = false
+    static transactional = true
 
     /**
      * Checks whether the user has been logged in
@@ -33,7 +33,7 @@ class AuthenticationService {
 				} catch( Exception ex ) {
 					// If an exception occurs, the user is not correctly refreshed. Send the user back to gscf
 					session.user = null
-					log.info( "User refresh failed" )
+					log.info( "User refresh failed: ${ex.getMessage()}" )
 				}
 			}
 		}

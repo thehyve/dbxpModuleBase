@@ -24,7 +24,7 @@ class SynchronizationService {
 	boolean eager = false       // When set to true, this method fetches data about all studies from GSCF. Otherwise, it will only look at the
 								// studies marked as dirty in the database. Defaults to false.
 
-	static transactional = 'mongo'//true
+	static transactional = true
 
 	/**
 	 * Initialize this synchronizationService
@@ -536,8 +536,11 @@ class SynchronizationService {
 						assayFound.setPropertiesFromGscfJson( gscfAssay );
 
 						log.trace("Connecting assay to study")
+						// Save and flush study so that the assay gets an id (to avoid org.hibernate.TransientObjectException)
+						// failOnError should be on by default (see Config.groovy) but just in case
+						assayFound.save(flush: true, failOnError: true)
 						study.addToAssays(assayFound)
-						assayFound.save(flush: true)
+						study.save(flush: true, failOnError: true)
 					}
 
 					// Synchronize assay samples (since the assay itself is already synchronized)
