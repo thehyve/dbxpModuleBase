@@ -27,6 +27,10 @@ grails.project.dependency.resolution = {
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
 	plugins {
+
+		compile ":hibernate:$grailsVersion"
+		compile ":tomcat:$grailsVersion"
+
 		compile ':jquery:1.7.1'
 		compile ':jquery-datatables:1.7.5'
 		compile ':jquery-ui:1.8.15'
