@@ -27,15 +27,26 @@ grails.project.dependency.resolution = {
         //mavenRepo "http://repository.jboss.com/maven2/"
     }
 	plugins {
+		build(  ":tomcat:$grailsVersion",
+				":release:latest.integration",
+				":rest-client-builder:latest.integration"
+		) {
+			// plugin only plugin, should not be transitive to the application
+			export = false
+		}
 
-		compile ":hibernate:$grailsVersion"
-		compile ":tomcat:$grailsVersion"
-
-		compile ':jquery:1.7.1'
-		compile ':jquery-datatables:1.7.5'
-		compile ':jquery-ui:1.8.15'
-		compile ':famfamfam:1.0.1'
-		compile ':resources:1.1.1'
+		compile(
+			":hibernate:$grailsVersion",
+			":tomcat:$grailsVersion",
+			':jquery:1.7.1',
+			':jquery-datatables:1.7.5',
+			':jquery-ui:1.8.15',
+			':famfamfam:1.0.1',
+			':resources:1.1.1'
+		) {
+			// no need to export the plugins to application (dependencies are declared in plugin descriptor file)
+			export = false
+		}
 	}
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
