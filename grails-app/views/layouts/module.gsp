@@ -132,8 +132,8 @@
 				<% /* Include topnav as specified by the page */ %>
 				<g:pageProperty name="page.topnav" />
 				<li class="user_info">
-					<g:if test="${session?.user}">
-						Hello ${session?.user?.username}&nbsp;&nbsp;|&nbsp;
+					<g:if test="${session?.gscfUser}">
+						Hello ${session?.gscfUser?.username}&nbsp;&nbsp;|&nbsp;
 			        	<g:link controller="logout" action="index">sign out</g:link>
 			        </g:if>
 			        <g:else>
