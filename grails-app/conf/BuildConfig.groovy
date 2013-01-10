@@ -38,15 +38,19 @@ grails.project.dependency.resolution = {
 		compile(
 			":hibernate:$grailsVersion",
 			":tomcat:$grailsVersion",
-			':jquery:1.7.1',
-			':jquery-datatables:1.7.5',
-			':jquery-ui:1.8.15',
-			':famfamfam:1.0.1',
-			':resources:1.1.1'
+			':resources:latest.integration'
 		) {
 			// no need to export the plugins to application (dependencies are declared in plugin descriptor file)
 			export = false
 		}
+        compile(
+                ':jquery:latest.integration',
+                ':jquery-datatables:1.7.5',
+                ':jquery-ui:1.8.15',
+                ':famfamfam:1.0.1',
+       ) {
+            export = true
+        }
 	}
     dependencies {
         // specify dependencies here under either 'build', 'compile', 'runtime', 'test' or 'provided' scopes eg.
