@@ -75,8 +75,9 @@
 		<% /* require modules from the resources plugin */ %>
 		<r:require modules="moduleBase"/>
 
-		<% /* Make sure the module javascript always knows their baseUrl */ %>
-		<r:script disposition="head">var baseUrl = '${resource(dir: '')}';</r:script>
+		<% /* Make sure the module javascript always knows their baseUrl. We want the application URL not the plugin specific resource URL */ %>
+        <% /* CreateLink absolute doesn't seem to work: <r:script disposition="head">var baseUrl = '${g.createLink(absolute: true, url: '/')}'</r:script> */ %>
+        <r:script disposition="head">var baseUrl = "http://${request.getServerName()}${request.getServerPort() == 80 ? "" : ":"+request.getServerPort()}${request.getContextPath()}"</r:script>
 
 		<% /* include the layout resources that have to go in the head section */ %>
 		<r:layoutResources/>
