@@ -79,7 +79,13 @@ class DataTablesTagLib {
         // create show button
         out << "<td class='buttonColumn'>";
         if(attrs.blnEnabled) {
-            out << g.link(action:"show", class:"show", controller:attrs.controller, id:attrs.id, "<img src=\"${fam.icon( name: 'magnifier')}\" alt=\"show\"/>");
+            if (attrs?.params) {
+                out << g.link(action:"show", class:"show", controller:attrs.controller, params: attrs.params, id:attrs.id, "<img src=\"${fam.icon( name: 'magnifier')}\" alt=\"show\"/>");
+            }
+            else {
+                out << g.link(action:"show", class:"show", controller:attrs.controller, id:attrs.id, "<img src=\"${fam.icon( name: 'magnifier')}\" alt=\"show\"/>");
+            }
+
         } else {
             out << "<img class='disabled' src=\"${fam.icon( name: 'magnifier')}\" alt=\"show\"/>";
         }
@@ -110,7 +116,12 @@ class DataTablesTagLib {
         // create edit button
         out << "<td class='buttonColumn'>";
         if(attrs.blnEnabled) {
-            out << g.link(action:"edit", class:"edit", controller:attrs.controller, id:attrs.id, "<img src=\"${fam.icon( name: 'pencil')}\" alt=\"edit\"/>");
+            if (attrs?.params) {
+                out << g.link(action:"edit", class:"edit", controller:attrs.controller, params: attrs.params, id:attrs.id, "<img src=\"${fam.icon( name: 'pencil')}\" alt=\"edit\"/>");
+            }
+            else {
+                out << g.link(action:"edit", class:"edit", controller:attrs.controller, id:attrs.id, "<img src=\"${fam.icon( name: 'pencil')}\" alt=\"edit\"/>");
+            }
         } else {
             out << "<img class='disabled' src=\"${fam.icon( name: 'pencil')}\" alt=\"edit\"/>";
         }
@@ -141,10 +152,21 @@ class DataTablesTagLib {
         // create delete button
         out << "<td class='buttonColumn'>";
         if(attrs.blnEnabled) {
-            out << "<form id='"+attrs.controller+"_"+attrs.id+"_deleteform' name='"+attrs.controller+"_"+attrs.id+"_deleteform' method='post' action='delete'>";
-            out << g.link(action:"delete", class:"delete", onclick:"if(confirm('${message(code: 'default.button.delete.confirm.message', default: 'Are you sure?')}')) {\$('#${attrs.controller}_${attrs.id}_deleteform').submit(); return false;} else {return false;} ;", controller:attrs.controller, "<img src=\"${fam.icon( name: 'delete')}\" alt=\"delete\"/>");
-            out << "<input type='hidden' name='ids' value='"+attrs.id+"' />";
-            out << "</form>";
+            if (attrs?.params) {
+                out << "<form id='"+attrs.controller+"_"+attrs.id+"_deleteform' name='"+attrs.controller+"_"+attrs.id+"_deleteform' method='post' action='delete'>";
+                out << g.link(action:"delete", class:"delete", onclick:"if(confirm('${message(code: 'default.button.delete.confirm.message', default: 'Are you sure?')}')) {\$('#${attrs.controller}_${attrs.id}_deleteform').submit(); return false;} else {return false;} ;", controller:attrs.controller, "<img src=\"${fam.icon( name: 'delete')}\" alt=\"delete\"/>");
+                out << "<input type='hidden' name='ids' value='"+attrs.id+"' />";
+                params.each {
+                    out << "<input type='hidden' name='"+it.key+"' value='"+it.value+"' />";
+                }
+                out << "</form>";
+            }
+            else {
+                out << "<form id='"+attrs.controller+"_"+attrs.id+"_deleteform' name='"+attrs.controller+"_"+attrs.id+"_deleteform' method='post' action='delete'>";
+                out << g.link(action:"delete", class:"delete", onclick:"if(confirm('${message(code: 'default.button.delete.confirm.message', default: 'Are you sure?')}')) {\$('#${attrs.controller}_${attrs.id}_deleteform').submit(); return false;} else {return false;} ;", controller:attrs.controller, "<img src=\"${fam.icon( name: 'delete')}\" alt=\"delete\"/>");
+                out << "<input type='hidden' name='ids' value='"+attrs.id+"' />";
+                out << "</form>";
+            }
         } else {
             out << "<img class='disabled' src=\"${fam.icon( name: 'delete')}\" alt=\"delete\"/>";
         }
